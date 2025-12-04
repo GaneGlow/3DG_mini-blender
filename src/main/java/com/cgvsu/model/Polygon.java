@@ -8,7 +8,6 @@ public class Polygon {
     private ArrayList<Integer> textureVertexIndices;
     private ArrayList<Integer> normalIndices;
 
-
     public Polygon() {
         vertexIndices = new ArrayList<Integer>();
         textureVertexIndices = new ArrayList<Integer>();
@@ -41,4 +40,9 @@ public class Polygon {
     public ArrayList<Integer> getNormalIndices() {
         return normalIndices;
     }
+
+    public boolean isTriangle() {
+        return vertexIndices.size() == 3;
+    }
+
 }
