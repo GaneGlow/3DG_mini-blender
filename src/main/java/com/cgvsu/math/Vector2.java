@@ -3,13 +3,13 @@ package com.cgvsu.math;
 import java.util.Objects;
 
 public final class Vector2 {
-    public final double x;
-    public final double y;
+    public final float x;
+    public final float y;
 
-    private static final double EPS = 1e-10;
+    private static final float EPS = 1e-7f;
 
-    public Vector2(double x, double y) {
-        if (!Double.isFinite(x) || !Double.isFinite(y)) {
+    public Vector2(float x, float y) {
+        if (!Float.isFinite(x) || !Float.isFinite(y)) {
             throw new IllegalArgumentException("Координаты должны быть конечными числами");
         }
 
@@ -27,39 +27,39 @@ public final class Vector2 {
         return new Vector2(x - o.x, y - o.y);
     }
 
-    public Vector2 scale(double s) {
+    public Vector2 scale(float s) {
         return new Vector2(x * s, y * s);
     }
 
-    public Vector2 divide(double s) {
+    public Vector2 divide(float s) {
         if (Math.abs(s) < EPS) {
             throw new ArithmeticException("Деление на нулевой скаляр недопустимо!");
         }
         return new Vector2(x / s, y / s);
     }
 
-    public double dot(Vector2 o) {
+    public float dot(Vector2 o) {
         Objects.requireNonNull(o, "Переданный в качестве аргумента вектор нулевой!");
         return x * o.x + y * o.y;
     }
 
-    public double length() {
-        return Math.sqrt(x * x + y * y);
+    public float length() {
+        return (float) Math.sqrt(x * x + y * y);
     }
 
-    public double lengthSquared() {
+    public float lengthSquared() {
         return x * x + y * y;
     }
 
     public Vector2 normalized() {
-        double len = length();
+        float len = length();
         if (len < EPS) {
             throw new ArithmeticException("Невозможно привести нулевой вектор к нормализованному виду!");
         }
         return divide(len);
     }
 
-    public boolean approxEquals(Vector2 o, double eps) {
+    public boolean approxEquals(Vector2 o, float eps) {
         Objects.requireNonNull(o, "Переданный в качестве аргумента вектор нулевой!");
         return Math.abs(x - o.x) <= eps && Math.abs(y - o.y) <= eps;
     }
@@ -68,8 +68,8 @@ public final class Vector2 {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof Vector2 v)) return false;
-        return Double.doubleToLongBits(x) == Double.doubleToLongBits(v.x)
-                && Double.doubleToLongBits(y) == Double.doubleToLongBits(v.y);
+        return Float.floatToIntBits(x) == Float.floatToIntBits(v.x)
+                && Float.floatToIntBits(y) == Float.floatToIntBits(v.y);
     }
 
     @Override

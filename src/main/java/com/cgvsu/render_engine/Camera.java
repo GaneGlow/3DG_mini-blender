@@ -1,12 +1,12 @@
 package com.cgvsu.render_engine;
-import javax.vecmath.Vector3f;
-import javax.vecmath.Matrix4f;
+
+import com.cgvsu.math.Matrix4;
+import com.cgvsu.math.Vector3;
 
 public class Camera {
-
     public Camera(
-            final Vector3f position,
-            final Vector3f target,
+            final Vector3 position,
+            final Vector3 target,
             final float fov,
             final float aspectRatio,
             final float nearPlane,
@@ -19,11 +19,11 @@ public class Camera {
         this.farPlane = farPlane;
     }
 
-    public void setPosition(final Vector3f position) {
+    public void setPosition(final Vector3 position) {
         this.position = position;
     }
 
-    public void setTarget(final Vector3f target) {
+    public void setTarget(final Vector3 target) {
         this.target = target;
     }
 
@@ -31,32 +31,32 @@ public class Camera {
         this.aspectRatio = aspectRatio;
     }
 
-    public Vector3f getPosition() {
+    public Vector3 getPosition() {
         return position;
     }
 
-    public Vector3f getTarget() {
+    public Vector3 getTarget() {
         return target;
     }
 
-    public void movePosition(final Vector3f translation) {
-        this.position.add(translation);
+    public void movePosition(final Vector3 translation) {
+        this.position = this.position.add(translation);
     }
 
-    public void moveTarget(final Vector3f translation) {
-        this.target.add(target);
+    public void moveTarget(final Vector3 translation) {
+        this.target = this.target.add(translation);
     }
 
-    Matrix4f getViewMatrix() {
+    public Matrix4 getViewMatrix() {
         return GraphicConveyor.lookAt(position, target);
     }
 
-    Matrix4f getProjectionMatrix() {
+    public Matrix4 getProjectionMatrix() {
         return GraphicConveyor.perspective(fov, aspectRatio, nearPlane, farPlane);
     }
 
-    private Vector3f position;
-    private Vector3f target;
+    private Vector3 position;
+    private Vector3 target;
     private float fov;
     private float aspectRatio;
     private float nearPlane;

@@ -3,14 +3,14 @@ package com.cgvsu.math;
 import java.util.Objects;
 
 public final class Vector3 {
-    public final double x;
-    public final double y;
-    public final double z;
+    public final float x;
+    public final float y;
+    public final float z;
 
-    private static final double EPS = 1e-10;
+    private static final float EPS = 1e-7f;
 
-    public Vector3(double x, double y, double z) {
-        if (!Double.isFinite(x) || !Double.isFinite(y) || !Double.isFinite(z)) {
+    public Vector3(float x, float y, float z) {
+        if (!Float.isFinite(x) || !Float.isFinite(y) || !Float.isFinite(z)) {
             throw new IllegalArgumentException("Координаты должны быть конечными числами");
         }
 
@@ -29,18 +29,18 @@ public final class Vector3 {
         return new Vector3(x - o.x, y - o.y, z - o.z);
     }
 
-    public Vector3 scale(double s) {
+    public Vector3 scale(float s) {
         return new Vector3(x * s, y * s, z * s);
     }
 
-    public Vector3 divide(double s) {
+    public Vector3 divide(float s) {
         if (Math.abs(s) < EPS) {
             throw new ArithmeticException("Деление на нулевой скаляр недопустимо!");
         }
         return new Vector3(x / s, y / s, z / s);
     }
 
-    public double dot(Vector3 o) {
+    public float dot(Vector3 o) {
         Objects.requireNonNull(o, "Переданный в качестве аргумента вектор нулевой!");
         return x * o.x + y * o.y + z * o.z;
     }
@@ -54,23 +54,23 @@ public final class Vector3 {
         );
     }
 
-    public double length() {
-        return Math.sqrt(x * x + y * y + z * z);
+    public float length() {
+        return (float) Math.sqrt(x * x + y * y + z * z);
     }
 
-    public double lengthSquared() {
+    public float lengthSquared() {
         return x * x + y * y + z * z;
     }
 
     public Vector3 normalized() {
-        double len = length();
+        float len = length();
         if (len < EPS) {
             throw new ArithmeticException("Невозможно привести нулевой вектор к нормализованному виду!");
         }
         return divide(len);
     }
 
-    public boolean approxEquals(Vector3 o, double eps) {
+    public boolean approxEquals(Vector3 o, float eps) {
         Objects.requireNonNull(o, "Переданный в качестве аргумента вектор нулевой!");
         return Math.abs(x - o.x) <= eps && Math.abs(y - o.y) <= eps && Math.abs(z - o.z) <= eps;
     }
@@ -79,9 +79,9 @@ public final class Vector3 {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof Vector3 v)) return false;
-        return Double.doubleToLongBits(x) == Double.doubleToLongBits(v.x) &&
-                Double.doubleToLongBits(y) == Double.doubleToLongBits(v.y) &&
-                Double.doubleToLongBits(z) == Double.doubleToLongBits(v.z);
+        return Float.floatToIntBits(x) == Float.floatToIntBits(v.x) &&
+                Float.floatToIntBits(y) == Float.floatToIntBits(v.y) &&
+                Float.floatToIntBits(z) == Float.floatToIntBits(v.z);
     }
 
     @Override

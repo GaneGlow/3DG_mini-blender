@@ -3,11 +3,11 @@ package com.cgvsu.math;
 import java.util.Objects;
 
 public final class Vector4 {
-    public final double x, y, z, w;
-    private static final double EPS = 1e-10;
+    public final float x, y, z, w;
+    private static final float EPS = 1e-7f;
 
-    public Vector4(double x, double y, double z, double w) {
-        if (!Double.isFinite(x) || !Double.isFinite(y) || !Double.isFinite(z) || !Double.isFinite(w)) {
+    public Vector4(float x, float y, float z, float w) {
+        if (!Float.isFinite(x) || !Float.isFinite(y) || !Float.isFinite(z) || !Float.isFinite(w)) {
             throw new IllegalArgumentException("Координаты должны быть конечными числами");
         }
 
@@ -27,39 +27,39 @@ public final class Vector4 {
         return new Vector4(x - o.x, y - o.y, z - o.z, w - o.w);
     }
 
-    public Vector4 scale(double s) {
+    public Vector4 scale(float s) {
         return new Vector4(x * s, y * s, z * s, w * s);
     }
 
-    public Vector4 divide(double s) {
+    public Vector4 divide(float s) {
         if (Math.abs(s) < EPS) {
             throw new ArithmeticException("Деление на нулевой скаляр недопустимо!");
         }
         return new Vector4(x / s, y / s, z / s, w / s);
     }
 
-    public double dot(Vector4 o) {
+    public float dot(Vector4 o) {
         Objects.requireNonNull(o, "Переданный в качестве аргумента вектор нулевой!");
         return x * o.x + y * o.y + z * o.z + w * o.w;
     }
 
-    public double length() {
-        return Math.sqrt(x*x + y*y + z*z + w*w);
+    public float length() {
+        return (float) Math.sqrt(x*x + y*y + z*z + w*w);
     }
 
-    public double lengthSquared() {
+    public float lengthSquared() {
         return x*x + y*y + z*z + w*w;
     }
 
     public Vector4 normalized() {
-        double len = length();
+        float len = length();
         if (len < EPS) {
             throw new ArithmeticException("Невозможно привести нулевой вектор к нормализованному виду!");
         }
         return divide(len);
     }
 
-    public boolean approxEquals(Vector4 o, double eps) {
+    public boolean approxEquals(Vector4 o, float eps) {
         Objects.requireNonNull(o, "Переданный в качестве аргумента вектор нулевой!");
         return Math.abs(x - o.x) <= eps &&
                 Math.abs(y - o.y) <= eps &&
@@ -71,10 +71,10 @@ public final class Vector4 {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof Vector4 v)) return false;
-        return Double.doubleToLongBits(x) == Double.doubleToLongBits(v.x) &&
-                Double.doubleToLongBits(y) == Double.doubleToLongBits(v.y) &&
-                Double.doubleToLongBits(z) == Double.doubleToLongBits(v.z) &&
-                Double.doubleToLongBits(w) == Double.doubleToLongBits(v.w);
+        return Float.floatToIntBits(x) == Float.floatToIntBits(v.x) &&
+                Float.floatToIntBits(y) == Float.floatToIntBits(v.y) &&
+                Float.floatToIntBits(z) == Float.floatToIntBits(v.z) &&
+                Float.floatToIntBits(w) == Float.floatToIntBits(v.w);
     }
 
     @Override

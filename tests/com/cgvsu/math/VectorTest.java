@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class VectorTest {
-    private static final double EPS = 1e-9;
+    private static final float EPS = 1e-6f;
 
     @Test
     void vector2_basicOps() {
@@ -20,7 +20,7 @@ public class VectorTest {
         assertEquals(4, diff.x, EPS);
         assertEquals(-3, diff.y, EPS);
 
-        Vector2 scaled = a.scale(2.5);
+        Vector2 scaled = a.scale(2.5f);
         assertEquals(2.5, scaled.x, EPS);
         assertEquals(5.0, scaled.y, EPS);
 
@@ -32,7 +32,7 @@ public class VectorTest {
 
         assertEquals(Math.sqrt(5), new Vector2(1,2).length(), EPS);
         Vector2 n = new Vector2(3,4).normalized();
-        assertEquals(1.0, n.length(), 1e-12);
+        assertEquals(1.0, n.length(), EPS);
         assertThrows(ArithmeticException.class, () -> new Vector2(0,0).normalized()); // попытка нормализации нулевого вектора
 
         assertEquals(-3 + 2 * 5, a.dot(b), EPS);
@@ -65,7 +65,7 @@ public class VectorTest {
     @Test
     void vector4_ops() {
         Vector4 a = new Vector4(1,2,3,4);
-        Vector4 b = new Vector4(-1,0.5, 2, -3);
+        Vector4 b = new Vector4(-1,0.5f, 2, -3);
 
         Vector4 sum = a.add(b);
         assertEquals(0, sum.x, EPS);
@@ -73,10 +73,10 @@ public class VectorTest {
         assertEquals(5, sum.z, EPS);
         assertEquals(1, sum.w, EPS);
 
-        assertEquals(-1 + 2 * 0.5 + 3 * 2 + 4 * (-3), a.dot(b), EPS);
+        assertEquals(-1 + 2 * 0.5f + 3 * 2 + 4 * (-3), a.dot(b), EPS);
 
         Vector4 n = a.normalized();
-        assertEquals(1.0, n.length(), 1e-12);
+        assertEquals(1.0, n.length(), EPS);
         assertThrows(ArithmeticException.class, () -> new Vector4(0,0,0,0).normalized());
     }
 }

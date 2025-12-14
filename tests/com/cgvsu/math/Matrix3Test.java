@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Matrix3Test {
-    private static final double EPS = 1e-9;
+    private static final float EPS = 1e-6f; // Увеличил допуск для float операций
 
     @Test
     void identity_zero_and_basic() {
@@ -29,12 +29,12 @@ public class Matrix3Test {
 
     @Test
     void add_sub_mul() {
-        Matrix3 A = new Matrix3(new double[][]{
+        Matrix3 A = new Matrix3(new float[][]{
                 {1,2,3},
                 {4,5,6},
                 {7,8,9}
         });
-        Matrix3 B = new Matrix3(new double[][]{
+        Matrix3 B = new Matrix3(new float[][]{
                 {9,8,7},
                 {6,5,4},
                 {3,2,1}
@@ -58,31 +58,31 @@ public class Matrix3Test {
 
     @Test
     void determinant_inverse_solve() {
-        Matrix3 A = new Matrix3(new double[][]{
+        Matrix3 A = new Matrix3(new float[][]{
                 {2, 1, 3},
                 {0, -1, 2},
                 {1, 4, 0}
         });
-        double det = A.determinant();
-        assertEquals(-11, det, EPS);
+        float det = A.determinant();
+        assertEquals(-11, det, EPS); // Используем увеличенный допуск
 
         Matrix3 Inv = A.inverse();
         Matrix3 I = Inv.multiply(A);
-        assertTrue(I.approxEquals(Matrix3.identity(), 1e-9));
+        assertTrue(I.approxEquals(Matrix3.identity(), EPS));
 
         Vector3 b = new Vector3(7, 3, 5);
         Vector3 x = A.solve(b);
         Vector3 check = A.multiply(x);
-        assertEquals(b.x, check.x, 1e-8);
-        assertEquals(b.y, check.y, 1e-8);
-        assertEquals(b.z, check.z, 1e-8);
+        assertEquals(b.x, check.x, EPS);
+        assertEquals(b.y, check.y, EPS);
+        assertEquals(b.z, check.z, EPS);
 
-        Matrix3 singular = new Matrix3(new double[][]{
+        Matrix3 singular = new Matrix3(new float[][]{
                 {1,2,3},
                 {2,4,6},
                 {0,0,0}
         });
-        assertEquals(0.0, singular.determinant(), 1e-12);
+        assertEquals(0.0f, singular.determinant(), EPS);
         assertThrows(ArithmeticException.class, singular::inverse);
         assertThrows(ArithmeticException.class, () -> singular.solve(new Vector3(1,2,3)));
     }

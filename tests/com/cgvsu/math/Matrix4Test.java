@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Matrix4Test {
-    private static final double EPS = 1e-9;
+    private static final float EPS = 1e-9f;
 
     @Test
     void identity_zero() {
@@ -27,13 +27,13 @@ public class Matrix4Test {
 
     @Test
     void add_sub_mul_transpose() {
-        Matrix4 A = new Matrix4(new double[][]{
+        Matrix4 A = new Matrix4(new float[][]{
                 {1,2,3,4},
                 {5,6,7,8},
                 {9,10,11,12},
                 {13,14,15,16}
         });
-        Matrix4 B = new Matrix4(new double[][]{
+        Matrix4 B = new Matrix4(new float[][]{
                 {16,15,14,13},
                 {12,11,10,9},
                 {8,7,6,5},
@@ -58,35 +58,35 @@ public class Matrix4Test {
 
     @Test
     void det_inverse_solve() {
-        Matrix4 A = new Matrix4(new double[][]{
+        Matrix4 A = new Matrix4(new float[][]{
                 {4,  7,  2, 3},
                 {0,  5,  0, 1},
                 {0,  0,  3, 0},
                 {2,  0,  1, 1}
         });
 
-        double det = A.determinant();
-        assertNotEquals(0.0, det, 1e-12);
+        float det = A.determinant();
+        assertNotEquals(0.0f, det, 1e-12f);
 
         Matrix4 Inv = A.inverse();
         Matrix4 I = A.multiply(Inv);
-        assertTrue(I.approxEquals(Matrix4.identity(), 1e-8));
+        assertTrue(I.approxEquals(Matrix4.identity(), 1e-8f));
 
         Vector4 b = new Vector4(1,2,3,4);
         Vector4 x = A.solve(b);
         Vector4 check = A.multiply(x);
-        assertEquals(b.x, check.x, 1e-8);
-        assertEquals(b.y, check.y, 1e-8);
-        assertEquals(b.z, check.z, 1e-8);
-        assertEquals(b.w, check.w, 1e-8);
+        assertEquals(b.x, check.x, 1e-8f);
+        assertEquals(b.y, check.y, 1e-8f);
+        assertEquals(b.z, check.z, 1e-8f);
+        assertEquals(b.w, check.w, 1e-8f);
 
-        Matrix4 singular = new Matrix4(new double[][]{
+        Matrix4 singular = new Matrix4(new float[][]{
                 {1,2,3,4},
                 {2,4,6,8},
                 {0,0,0,0},
                 {5,10,15,20}
         });
-        assertEquals(0.0, singular.determinant(), 1e-8);
+        assertEquals(0.0f, singular.determinant(), 1e-8f);
         assertThrows(ArithmeticException.class, singular::inverse);
         assertThrows(ArithmeticException.class, () -> singular.solve(new Vector4(1,2,3,4)));
     }

@@ -4,22 +4,22 @@ import java.util.Arrays;
 import java.util.Objects;
 
 public final class Matrix3 {
-    private final double[][] m;
-    private static final double EPS = 1e-10;
+    private final float[][] m;
+    private static final float EPS = 1e-7f;
 
-    public Matrix3(double[][] values) {
+    public Matrix3(float[][] values) {
         Objects.requireNonNull(values, "Массив значений нулевой!");
         if (values.length != 3 || values[0].length != 3 || values[1].length != 3 || values[2].length != 3) {
             throw new IllegalArgumentException("Матрица должна быть задана как 3x3!");
         }
-        this.m = new double[3][3];
+        this.m = new float[3][3];
         for (int i = 0; i < 3; i++) {
             System.arraycopy(values[i], 0, this.m[i], 0, 3);
         }
     }
 
     public static Matrix3 zero() {
-        return new Matrix3(new double[][]{
+        return new Matrix3(new float[][]{
                 {0,0,0},
                 {0,0,0},
                 {0,0,0}
@@ -27,20 +27,20 @@ public final class Matrix3 {
     }
 
     public static Matrix3 identity() {
-        return new Matrix3(new double[][]{
+        return new Matrix3(new float[][]{
                 {1,0,0},
                 {0,1,0},
                 {0,0,1}
         });
     }
 
-    public double get(int row, int col) {
+    public float get(int row, int col) {
         return m[row][col];
     }
 
     public Matrix3 add(Matrix3 o) {
         Objects.requireNonNull(o, "Переданная в качестве аргумента матрица нулевая!");
-        double[][] r = new double[3][3];
+        float[][] r = new float[3][3];
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
                 r[i][j] = m[i][j] + o.m[i][j];
@@ -51,7 +51,7 @@ public final class Matrix3 {
 
     public Matrix3 subtract(Matrix3 o) {
         Objects.requireNonNull(o, "Переданная в качестве аргумента матрица нулевая!");
-        double[][] r = new double[3][3];
+        float[][] r = new float[3][3];
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
                 r[i][j] = m[i][j] - o.m[i][j];
@@ -62,10 +62,10 @@ public final class Matrix3 {
 
     public Matrix3 multiply(Matrix3 o) {
         Objects.requireNonNull(o, "Переданная в качестве аргумента матрица нулевая!");
-        double[][] r = new double[3][3];
+        float[][] r = new float[3][3];
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
-                double sum = 0;
+                float sum = 0;
                 for (int k = 0; k < 3; k++) {
                     sum += m[i][k] * o.m[k][j];
                 }
@@ -85,7 +85,7 @@ public final class Matrix3 {
     }
 
     public Matrix3 transpose() {
-        double[][] r = new double[3][3];
+        float[][] r = new float[3][3];
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
                 r[i][j] = m[j][i];
@@ -94,22 +94,22 @@ public final class Matrix3 {
         return new Matrix3(r);
     }
 
-    public double determinant() {
-        double a = m[0][0], b = m[0][1], c = m[0][2];
-        double d = m[1][0], e = m[1][1], f = m[1][2];
-        double g = m[2][0], h = m[2][1], i = m[2][2];
+    public float determinant() {
+        float a = m[0][0], b = m[0][1], c = m[0][2];
+        float d = m[1][0], e = m[1][1], f = m[1][2];
+        float g = m[2][0], h = m[2][1], i = m[2][2];
         return a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g);
     }
 
     public Matrix3 inverse() {
-        double[][] a = copy(m);
-        double[][] inv = identity().m;
+        float[][] a = copy(m);
+        float[][] inv = identity().m;
 
         for (int col = 0; col < 3; col++) {
             int pivot = col;
-            double max = Math.abs(a[pivot][col]);
+            float max = Math.abs(a[pivot][col]);
             for (int r = col + 1; r < 3; r++) {
-                double val = Math.abs(a[r][col]);
+                float val = Math.abs(a[r][col]);
                 if (val > max) {
                     max = val;
                     pivot = r;
@@ -124,7 +124,7 @@ public final class Matrix3 {
                 swapRows(inv, pivot, col);
             }
 
-            double pivVal = a[col][col];
+            float pivVal = a[col][col];
             for (int j = 0; j < 3; j++) {
                 a[col][j] /= pivVal;
                 inv[col][j] /= pivVal;
@@ -132,7 +132,7 @@ public final class Matrix3 {
 
             for (int r = 0; r < 3; r++) {
                 if (r == col) continue;
-                double factor = a[r][col];
+                float factor = a[r][col];
                 if (Math.abs(factor) < EPS) continue;
                 for (int j = 0; j < 3; j++) {
                     a[r][j] -= factor * a[col][j];
@@ -146,14 +146,14 @@ public final class Matrix3 {
     public Vector3 solve(Vector3 b) {
         Objects.requireNonNull(b, "Переданный в качестве аргумента вектор нулевой!");
         int n = 3;
-        double[][] a = copy(m);
-        double[] rhs = new double[]{b.x, b.y, b.z};
+        float[][] a = copy(m);
+        float[] rhs = new float[]{b.x, b.y, b.z};
 
         for (int col = 0; col < n; col++) {
             int pivot = col;
-            double max = Math.abs(a[pivot][col]);
+            float max = Math.abs(a[pivot][col]);
             for (int r = col + 1; r < n; r++) {
-                double val = Math.abs(a[r][col]);
+                float val = Math.abs(a[r][col]);
                 if (val > max) {
                     max = val; pivot = r;
                 }
@@ -164,11 +164,11 @@ public final class Matrix3 {
 
             if (pivot != col) {
                 swapRows(a, pivot, col);
-                double tmp = rhs[pivot]; rhs[pivot] = rhs[col]; rhs[col] = tmp;
+                float tmp = rhs[pivot]; rhs[pivot] = rhs[col]; rhs[col] = tmp;
             }
 
             for (int r = col + 1; r < n; r++) {
-                double factor = a[r][col] / a[col][col];
+                float factor = a[r][col] / a[col][col];
                 for (int j = col; j < n; j++) {
                     a[r][j] -= factor * a[col][j];
                 }
@@ -176,13 +176,13 @@ public final class Matrix3 {
             }
         }
 
-        double[] x = new double[n];
+        float[] x = new float[n];
         for (int i = n - 1; i >= 0; i--) {
-            double sum = rhs[i];
+            float sum = rhs[i];
             for (int j = i + 1; j < n; j++) {
                 sum -= a[i][j] * x[j];
             }
-            double diag = a[i][i];
+            float diag = a[i][i];
             if (Math.abs(diag) < EPS) {
                 throw new ArithmeticException("Система вырожденная!");
             }
@@ -191,21 +191,21 @@ public final class Matrix3 {
         return new Vector3(x[0], x[1], x[2]);
     }
 
-    private static void swapRows(double[][] a, int r1, int r2) {
-        double[] tmp = a[r1];
+    private static void swapRows(float[][] a, int r1, int r2) {
+        float[] tmp = a[r1];
         a[r1] = a[r2];
         a[r2] = tmp;
     }
 
-    private static double[][] copy(double[][] src) {
-        double[][] r = new double[src.length][src[0].length];
+    private static float[][] copy(float[][] src) {
+        float[][] r = new float[src.length][src[0].length];
         for (int i = 0; i < src.length; i++) {
             System.arraycopy(src[i], 0, r[i], 0, src[i].length);
         }
         return r;
     }
 
-    public boolean approxEquals(Matrix3 o, double eps) {
+    public boolean approxEquals(Matrix3 o, float eps) {
         for (int i=0;i<3;i++) for (int j=0;j<3;j++) {
             if (Math.abs(m[i][j] - o.m[i][j]) > eps) {
                 return false;
@@ -219,7 +219,7 @@ public final class Matrix3 {
         if (this == o) return true;
         if (!(o instanceof Matrix3 other)) return false;
         for (int i=0;i<3;i++) for (int j=0;j<3;j++) {
-            if (Double.doubleToLongBits(m[i][j]) != Double.doubleToLongBits(other.m[i][j])) return false;
+            if (Float.floatToIntBits(m[i][j]) != Float.floatToIntBits(other.m[i][j])) return false;
         }
         return true;
     }
@@ -227,7 +227,7 @@ public final class Matrix3 {
     @Override
     public int hashCode() {
         int r = 1;
-        for (int i=0;i<3;i++) for (int j=0;j<3;j++) r = 31*r + Double.hashCode(m[i][j]);
+        for (int i=0;i<3;i++) for (int j=0;j<3;j++) r = 31*r + Float.hashCode(m[i][j]);
         return r;
     }
 
