@@ -1,8 +1,8 @@
-package com.cgvsu.triangulation;
+package src.main.java.com.cgvsu.triangulation;
 
-import com.cgvsu.model.Model;
-import com.cgvsu.model.Polygon;
-import com.cgvsu.model.TriangulatedModel;
+import src.main.java.com.cgvsu.model.Model;
+import src.main.java.com.cgvsu.model.Polygon;
+import src.main.java.com.cgvsu.model.TriangulatedModel;
 
 public class Triangulator {
 

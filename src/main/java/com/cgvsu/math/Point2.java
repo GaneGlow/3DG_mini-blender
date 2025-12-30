@@ -1,4 +1,4 @@
-package com.cgvsu.math;
+package src.main.java.com.cgvsu.math;
 
 public class Point2 {
     public final float x;

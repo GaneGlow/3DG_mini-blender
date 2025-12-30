@@ -1,7 +1,7 @@
-package com.cgvsu;
+package src.main.java.com.cgvsu;
 
-import com.cgvsu.math.Vector3;
-import com.cgvsu.render_engine.RenderEngine;
+import src.main.java.com.cgvsu.math.Vector3;
+import src.main.java.com.cgvsu.render_engine.RenderEngine;
 import javafx.fxml.FXML;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
@@ -16,11 +16,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.io.IOException;
 import java.io.File;
-import javax.vecmath.Vector3f;
 
-import com.cgvsu.model.Model;
-import com.cgvsu.objreader.ObjReader;
-import com.cgvsu.render_engine.Camera;
+import src.main.java.com.cgvsu.model.Model;
+import src.main.java.com.cgvsu.objreader.ObjReader;
+import src.main.java.com.cgvsu.render_engine.Camera;
 
 public class GuiController {
 

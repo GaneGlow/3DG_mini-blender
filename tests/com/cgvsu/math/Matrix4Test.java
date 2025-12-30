@@ -1,5 +1,8 @@
-package com.cgvsu.math;
+package tests.com.cgvsu.math;
 import org.junit.jupiter.api.Test;
+
+import src.main.java.com.cgvsu.math.Matrix4;
+import src.main.java.com.cgvsu.math.Vector4;
 
 import static org.junit.jupiter.api.Assertions.*;
 

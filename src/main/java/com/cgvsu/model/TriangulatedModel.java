@@ -1,10 +1,6 @@
-package com.cgvsu.model;
-
-import com.cgvsu.math.Vector3;
-
+package src.main.java.com.cgvsu.model;
 
 import java.util.ArrayList;
-import java.util.List;
 
 public class TriangulatedModel extends Model {
 

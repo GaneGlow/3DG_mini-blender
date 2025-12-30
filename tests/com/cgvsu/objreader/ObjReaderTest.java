@@ -1,8 +1,10 @@
-package com.cgvsu.objreader;
+package tests.com.cgvsu.objreader;
 
-import com.cgvsu.math.Vector3;
+import src.main.java.com.cgvsu.math.Vector3;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import src.main.java.com.cgvsu.objreader.ObjReaderException;
+import src.main.java.com.cgvsu.objreader.ObjReader;
 
 import java.util.ArrayList;
 import java.util.Arrays;

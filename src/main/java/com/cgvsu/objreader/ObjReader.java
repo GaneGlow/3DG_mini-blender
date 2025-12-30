@@ -1,10 +1,10 @@
-package com.cgvsu.objreader;
+package src.main.java.com.cgvsu.objreader;
 
 
-import com.cgvsu.math.Vector2;
-import com.cgvsu.math.Vector3;
-import com.cgvsu.model.Model;
-import com.cgvsu.model.Polygon;
+import src.main.java.com.cgvsu.math.Vector2;
+import src.main.java.com.cgvsu.math.Vector3;
+import src.main.java.com.cgvsu.model.Model;
+import src.main.java.com.cgvsu.model.Polygon;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -56,7 +56,7 @@ public class ObjReader {
 	}
 
 	// Всем методам кроме основного я поставил модификатор доступа protected, чтобы обращаться к ним в тестах
-	protected static Vector3 parseVertex(final ArrayList<String> wordsInLineWithoutToken, int lineInd) {
+	public static Vector3 parseVertex(final ArrayList<String> wordsInLineWithoutToken, int lineInd) {
 		try {
 			return new Vector3(
 					Float.parseFloat(wordsInLineWithoutToken.get(0)),

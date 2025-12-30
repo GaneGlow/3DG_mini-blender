@@ -1,4 +1,4 @@
-package com.cgvsu.math;
+package src.main.java.com.cgvsu.math;
 
 import java.util.Arrays;
 import java.util.Objects;

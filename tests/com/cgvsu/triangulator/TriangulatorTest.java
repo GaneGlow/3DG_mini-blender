@@ -1,11 +1,11 @@
-package com.cgvsu.triangulator;
+package tests.com.cgvsu.triangulator;
 
-import com.cgvsu.math.Vector2;
-import com.cgvsu.math.Vector3;
-import com.cgvsu.model.Model;
-import com.cgvsu.model.Polygon;
-import com.cgvsu.model.TriangulatedModel;
-import com.cgvsu.triangulation.Triangulator;
+import src.main.java.com.cgvsu.math.Vector2;
+import src.main.java.com.cgvsu.math.Vector3;
+import src.main.java.com.cgvsu.model.Model;
+import src.main.java.com.cgvsu.model.Polygon;
+import src.main.java.com.cgvsu.model.TriangulatedModel;
+import src.main.java.com.cgvsu.triangulation.Triangulator;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;

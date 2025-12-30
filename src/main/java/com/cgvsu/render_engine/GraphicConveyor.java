@@ -1,8 +1,8 @@
-package com.cgvsu.render_engine;
+package src.main.java.com.cgvsu.render_engine;
 
-import com.cgvsu.math.Matrix4;
-import com.cgvsu.math.Point2;
-import com.cgvsu.math.Vector3;
+import src.main.java.com.cgvsu.math.Matrix4;
+import src.main.java.com.cgvsu.math.Point2;
+import src.main.java.com.cgvsu.math.Vector3;
 
 public class GraphicConveyor {
     public static Matrix4 rotateScaleTranslate() {
