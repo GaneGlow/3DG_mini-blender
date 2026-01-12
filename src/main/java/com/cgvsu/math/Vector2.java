@@ -81,4 +81,12 @@ public final class Vector2 {
     public String toString() {
         return "Vector2(" + x + ", " + y + ")";
     }
+
+    public float getX() {
+        return x;
+    }
+
+    public float getY() {
+        return y;
+    }
 }
