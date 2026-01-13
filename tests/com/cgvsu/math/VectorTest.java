@@ -1,6 +1,9 @@
 package com.cgvsu.math;
 
 import org.junit.jupiter.api.Test;
+import com.cgvsu.math.Vector2;
+import com.cgvsu.math.Vector3;
+import com.cgvsu.math.Vector4;
 
 import static org.junit.jupiter.api.Assertions.*;
 

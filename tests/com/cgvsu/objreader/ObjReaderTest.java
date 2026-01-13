@@ -3,6 +3,8 @@ package com.cgvsu.objreader;
 import com.cgvsu.math.Vector3;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import com.cgvsu.objreader.ObjReaderException;
+import com.cgvsu.objreader.ObjReader;
 
 import java.util.ArrayList;
 import java.util.Arrays;

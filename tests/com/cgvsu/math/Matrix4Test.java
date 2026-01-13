@@ -1,6 +1,9 @@
 package com.cgvsu.math;
 import org.junit.jupiter.api.Test;
 
+import com.cgvsu.math.Matrix4;
+import com.cgvsu.math.Vector4;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Matrix4Test {
