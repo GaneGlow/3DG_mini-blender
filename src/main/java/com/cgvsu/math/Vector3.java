@@ -93,4 +93,16 @@ public final class Vector3 {
     public String toString() {
         return "Vector3(" + x + ", " + y + ", " + z + ")";
     }
+
+    public float getX() {
+        return x;
+    }
+
+    public float getY() {
+        return y;
+    }
+
+    public float getZ() {
+        return z;
+    }
 }

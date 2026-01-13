@@ -1,9 +1,9 @@
 package com.cgvsu.render_engine;
-
 import com.cgvsu.math.Matrix4;
 import com.cgvsu.math.Vector3;
 
 public class Camera {
+
     public Camera(
             final Vector3 position,
             final Vector3 target,
@@ -40,18 +40,18 @@ public class Camera {
     }
 
     public void movePosition(final Vector3 translation) {
-        this.position = this.position.add(translation);
+        this.position.add(translation);
     }
 
     public void moveTarget(final Vector3 translation) {
-        this.target = this.target.add(translation);
+        this.target.add(target);
     }
 
-    public Matrix4 getViewMatrix() {
+    Matrix4 getViewMatrix() {
         return GraphicConveyor.lookAt(position, target);
     }
 
-    public Matrix4 getProjectionMatrix() {
+    Matrix4 getProjectionMatrix() {
         return GraphicConveyor.perspective(fov, aspectRatio, nearPlane, farPlane);
     }
 

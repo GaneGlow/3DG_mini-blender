@@ -10,7 +10,7 @@ public class Model {
     public ArrayList<Vector3> normals = new ArrayList<>();
     public ArrayList<Polygon> polygons = new ArrayList<>();
 
-    // Метод для вычисления нормалей на основе геометрии
+
     public void recalculateNormals() {
         normals.clear();
 
@@ -28,10 +28,8 @@ public class Model {
                 continue; // Пропускаем полигоны с менее чем 3 вершинами
             }
 
-            // Вычисляем нормаль полигона через векторное произведение
             Vector3 polygonNormal = calculatePolygonNormal(polygon);
 
-            // Добавляем нормаль полигона ко всем его вершинам
             for (Integer vertexIndex : vertexIndices) {
                 Vector3 currentNormal = vertexNormals.get(vertexIndex);
                 vertexNormals.set(vertexIndex, currentNormal.add(polygonNormal));
@@ -43,13 +41,12 @@ public class Model {
             normals.add(normal.normalized());
         }
 
-        // Обновляем индексы нормалей в полигонах
         for (Polygon polygon : polygons) {
             ArrayList<Integer> normalIndices = new ArrayList<>();
             for (Integer vertexIndex : polygon.getVertexIndices()) {
-                normalIndices.add(vertexIndex); // Теперь нормаль вершины = индекс вершины
+                normalIndices.add(vertexIndex);
             }
-            polygon.setNormalIndices(normalIndices); // обновляем ссылки в полигонах
+            polygon.setNormalIndices(normalIndices);
         }
     }
 
