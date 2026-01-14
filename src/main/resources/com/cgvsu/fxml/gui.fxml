@@ -7,6 +7,8 @@
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.canvas.Canvas?>
 
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.CheckBox?>
 <AnchorPane fx:id="anchorPane" xmlns:fx="http://javafx.com/fxml" fx:controller="com.cgvsu.GuiController">
     <MenuBar>
         <Menu mnemonicParsing="false" text="File">
@@ -51,4 +53,19 @@
     </MenuBar>
 
     <Canvas fx:id="canvas" width="1600" height="870" AnchorPane.topAnchor="30.0"/>
+
+    <VBox spacing="6"
+          AnchorPane.rightAnchor="10"
+          AnchorPane.topAnchor="40">
+
+        <CheckBox fx:id="wireframeCheckBox"
+                  text="Рисовать сетку"/>
+
+        <CheckBox fx:id="textureCheckBox"
+                  text="Использовать текстуру"/>
+
+        <CheckBox fx:id="lightingCheckBox"
+                  text="Использовать освещение"/>
+
+    </VBox>
 </AnchorPane>

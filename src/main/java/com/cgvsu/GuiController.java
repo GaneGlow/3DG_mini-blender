@@ -2,17 +2,22 @@ package com.cgvsu;
 
 import com.cgvsu.math.Vector3;
 import com.cgvsu.model.ModelPreparationUtils;
+import com.cgvsu.model.TriangulatedModel;
 import com.cgvsu.render_engine.RenderEngine;
+import com.cgvsu.render_engine.RenderSettings;
+import com.cgvsu.triangulation.Triangulator;
 import javafx.fxml.FXML;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.event.ActionEvent;
 import javafx.scene.canvas.Canvas;
+import javafx.scene.control.CheckBox;
 import javafx.scene.layout.AnchorPane;
 import javafx.stage.Stage;
 import javafx.stage.FileChooser;
 import javafx.util.Duration;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.io.IOException;
@@ -31,6 +36,15 @@ public class GuiController {
 
     @FXML
     private Canvas canvas;
+    @FXML
+    private CheckBox wireframeCheckBox;
+    @FXML
+    private CheckBox textureCheckBox;
+    @FXML
+    private CheckBox lightingCheckBox;
+
+    private final RenderSettings renderSettings = new RenderSettings();
+
 
     private Model mesh = null;
 
@@ -60,6 +74,16 @@ public class GuiController {
                 RenderEngine.render(canvas.getGraphicsContext2D(), camera, mesh, (int) width, (int) height);
             }
         });
+
+        wireframeCheckBox.selectedProperty().addListener((o, a, b) ->
+                renderSettings.drawWireframe = b);
+
+        textureCheckBox.selectedProperty().addListener((o, a, b) ->
+                renderSettings.useTexture = b);
+
+        lightingCheckBox.selectedProperty().addListener((o, a, b) ->
+                renderSettings.useLighting = b);
+
 
         timeline.getKeyFrames().add(frame);
         timeline.play();
