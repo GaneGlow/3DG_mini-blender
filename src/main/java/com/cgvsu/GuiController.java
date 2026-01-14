@@ -1,7 +1,10 @@
 package com.cgvsu;
 
 import com.cgvsu.math.Vector3;
+import com.cgvsu.model.ModelPreparationUtils;
+import com.cgvsu.model.TriangulatedModel;
 import com.cgvsu.render_engine.RenderEngine;
+import com.cgvsu.triangulation.Triangulator;
 import javafx.fxml.FXML;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
@@ -79,7 +82,14 @@ public class GuiController {
 
         try {
             String fileContent = Files.readString(fileName);
+            /*mesh = ObjReader.read(fileContent);
+
+            mesh = Triangulator.triangulate(mesh);
+            mesh.recalculateNormals();*/
             mesh = ObjReader.read(fileContent);
+            mesh = ModelPreparationUtils.prepare(mesh);
+
+
             // todo: обработка ошибок
         } catch (IOException exception) {
 
