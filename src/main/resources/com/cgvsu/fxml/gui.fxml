@@ -50,6 +50,9 @@
                     <KeyCodeCombination alt="UP" control="DOWN" meta="UP" shift="UP" shortcut="UP" code="F"/>
                 </accelerator>
             </MenuItem>
+            <MenuItem mnemonicParsing="false"
+                      onAction="#onOpenTextureMenuItemClick"
+                      text="Load Texture"/>
         </Menu>
 
         <!-- Menu "Камера" -->

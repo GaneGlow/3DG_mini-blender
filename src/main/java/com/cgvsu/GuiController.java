@@ -2,6 +2,7 @@ package com.cgvsu;
 
 import com.cgvsu.math.Vector3;
 import com.cgvsu.model.ModelPreparationUtils;
+import com.cgvsu.render_engine.Texture;
 import com.cgvsu.render_engine.RenderEngine;
 import com.cgvsu.render_engine.RenderSettings;
 import javafx.fxml.FXML;
@@ -27,6 +28,7 @@ import java.io.File;
 import com.cgvsu.model.Model;
 import com.cgvsu.objreader.ObjReader;
 import com.cgvsu.render_engine.Camera;
+import javafx.scene.image.Image;
 
 public class GuiController {
 
@@ -57,6 +59,7 @@ public class GuiController {
     private Label modelInfoLabel;
 
     private final RenderSettings renderSettings = new RenderSettings();
+    private Texture texture = null;
 
     private Model mesh = null;
 
@@ -88,6 +91,23 @@ public class GuiController {
         timeline.setCycleCount(Animation.INDEFINITE);
 
         KeyFrame frame = new KeyFrame(Duration.millis(15), event -> {
+            double width = canvas.getWidth();
+            double height = canvas.getHeight();
+
+            canvas.getGraphicsContext2D().clearRect(0, 0, width, height);
+            camera.setAspectRatio((float) (width / height));
+
+            if (mesh != null) {
+                RenderEngine.render(
+                        canvas.getGraphicsContext2D(),
+                        camera,
+                        mesh,
+                        texture,
+                        renderSettings,
+                        (int) width,
+                        (int) height
+                );
+            }
             renderFrame();
         });
 
@@ -99,6 +119,7 @@ public class GuiController {
 
         lightingCheckBox.selectedProperty().addListener((o, a, b) ->
                 renderSettings.useLighting = b);
+
 
         timeline.getKeyFrames().add(frame);
         timeline.play();
@@ -152,6 +173,17 @@ public class GuiController {
 
         } catch (IOException exception) {
             System.err.println("Ошибка загрузки модели: " + exception.getMessage());
+            // TODO: обработка ошибок
+            System.err.println("Error loading model: " + exception.getMessage());
+        }
+    }
+
+    @FXML
+    private void onOpenTextureMenuItemClick() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(
+                "Image Files", "*.png", "*.jpg", "*.jpeg", "*.bmp", "*.gif"));
+        fileChooser.setTitle("Load Texture");
 
             Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.setTitle("Ошибка");
@@ -163,6 +195,21 @@ public class GuiController {
             if (modelInfoLabel != null) {
                 modelInfoLabel.setText("Ошибка загрузки модели");
             }
+        File file = fileChooser.showOpenDialog((Stage) canvas.getScene().getWindow());
+        if (file == null) {
+            return;
+        }
+
+        try {
+            Image image = new Image(file.toURI().toString());
+            texture = new Texture(image);
+            renderSettings.useTexture = true;
+            textureCheckBox.setSelected(true);
+
+            System.out.println("Texture loaded: " + file.getName() +
+                    " (" + (int)image.getWidth() + "x" + (int)image.getHeight() + ")");
+        } catch (Exception exception) {
+            System.err.println("Error loading texture: " + exception.getMessage());
         }
     }
 
