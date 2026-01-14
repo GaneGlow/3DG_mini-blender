@@ -9,42 +9,67 @@
 
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.control.CheckBox?>
-<AnchorPane fx:id="anchorPane" xmlns:fx="http://javafx.com/fxml" fx:controller="com.cgvsu.GuiController">
-    <MenuBar>
-        <Menu mnemonicParsing="false" text="File">
-            <MenuItem mnemonicParsing="false" onAction="#onOpenModelMenuItemClick" text="Load Model">
-            <accelerator>
-                <KeyCodeCombination alt="UP" control="DOWN" meta="UP" shift="UP" shortcut="UP" code="F"/>
-            </accelerator>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.HBox?>
+<AnchorPane fx:id="anchorPane" xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.cgvsu.GuiController"
+            styleClass="root-pane"
+            stylesheets="@styles.css">
+
+    <!-- MenuBar -->
+    <MenuBar styleClass="menu-bar"
+             AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0">
+
+        <!-- Menu "Файл" -->
+        <Menu mnemonicParsing="false" text="Файл" styleClass="menu">
+            <MenuItem mnemonicParsing="false" onAction="#onOpenModelMenuItemClick" text="Загрузить модель"
+                      styleClass="menu-item">
+                <accelerator>
+                    <KeyCodeCombination alt="UP" control="DOWN" meta="UP" shift="UP" shortcut="UP" code="F"/>
+                </accelerator>
             </MenuItem>
         </Menu>
-        <Menu mnemonicParsing="false" text="Camera Options">
-            <MenuItem mnemonicParsing="false" onAction="#handleCameraForward" text="Forward">
+
+        <!-- Menu "Камера" -->
+        <Menu mnemonicParsing="false" text="Камера" styleClass="menu">
+            <MenuItem mnemonicParsing="false" onAction="#handleCameraForward" text="Вперед"
+                      styleClass="menu-item">
                 <accelerator>
                     <KeyCodeCombination alt="UP" control="UP" meta="UP" shift="UP" shortcut="UP" code="UP"/>
                 </accelerator>
             </MenuItem>
-            <MenuItem mnemonicParsing="false" onAction="#handleCameraBackward" text="Backward">
+
+            <MenuItem mnemonicParsing="false" onAction="#handleCameraBackward" text="Назад"
+                      styleClass="menu-item">
                 <accelerator>
                     <KeyCodeCombination alt="UP" control="UP" meta="UP" shift="UP" shortcut="UP" code="DOWN"/>
                 </accelerator>
             </MenuItem>
-            <MenuItem mnemonicParsing="false" onAction="#handleCameraLeft" text="Left">
+
+            <MenuItem mnemonicParsing="false" onAction="#handleCameraLeft" text="Влево"
+                      styleClass="menu-item">
                 <accelerator>
                     <KeyCodeCombination alt="UP" control="UP" meta="UP" shift="UP" shortcut="UP" code="LEFT"/>
                 </accelerator>
             </MenuItem>
-            <MenuItem mnemonicParsing="false" onAction="#handleCameraRight" text="Right">
+
+            <MenuItem mnemonicParsing="false" onAction="#handleCameraRight" text="Вправо"
+                      styleClass="menu-item">
                 <accelerator>
                     <KeyCodeCombination alt="UP" control="UP" meta="UP" shift="UP" shortcut="UP" code="RIGHT"/>
                 </accelerator>
             </MenuItem>
-            <MenuItem mnemonicParsing="false" onAction="#handleCameraUp" text="Up">
+
+            <MenuItem mnemonicParsing="false" onAction="#handleCameraUp" text="Вверх"
+                      styleClass="menu-item">
                 <accelerator>
                     <KeyCodeCombination alt="UP" control="UP" meta="UP" shift="UP" shortcut="UP" code="W"/>
                 </accelerator>
             </MenuItem>
-            <MenuItem mnemonicParsing="false" onAction="#handleCameraDown" text="Down">
+
+            <MenuItem mnemonicParsing="false" onAction="#handleCameraDown" text="Вниз"
+                      styleClass="menu-item">
                 <accelerator>
                     <KeyCodeCombination alt="UP" control="UP" meta="UP" shift="UP" shortcut="UP" code="S"/>
                 </accelerator>
@@ -52,20 +77,52 @@
         </Menu>
     </MenuBar>
 
-    <Canvas fx:id="canvas" width="1600" height="870" AnchorPane.topAnchor="30.0"/>
+    <!-- Контейнер для Canvas -->
+    <StackPane styleClass="canvas-container"
+               AnchorPane.leftAnchor="0"
+               AnchorPane.topAnchor="30"
+               AnchorPane.bottomAnchor="0"
+               AnchorPane.rightAnchor="250">
 
-    <VBox spacing="6"
+        <Canvas fx:id="canvas" width="1020" height="800"/>
+
+    </StackPane>
+
+    <!-- Правая панель управления -->
+    <VBox fx:id="rightPanel" styleClass="right-panel"
+          AnchorPane.topAnchor="30"
+          AnchorPane.bottomAnchor="0"
+          AnchorPane.rightAnchor="0"
+          prefWidth="250">
+
+        <Label fx:id="panelTitle" styleClass="right-panel-title"/>
+
+    </VBox>
+
+    <!-- Панель настроек -->
+    <VBox styleClass="settings-panel"
           AnchorPane.rightAnchor="10"
           AnchorPane.topAnchor="40">
 
-        <CheckBox fx:id="wireframeCheckBox"
-                  text="Рисовать сетку"/>
+        <CheckBox fx:id="wireframeCheckBox" text="Рисовать сетку" styleClass="check-box"/>
 
-        <CheckBox fx:id="textureCheckBox"
-                  text="Использовать текстуру"/>
+        <CheckBox fx:id="textureCheckBox" text="Использовать текстуру" styleClass="check-box"/>
 
-        <CheckBox fx:id="lightingCheckBox"
-                  text="Использовать освещение"/>
+        <CheckBox fx:id="lightingCheckBox" text="Использовать освещение" styleClass="check-box"/>
 
     </VBox>
+
+    <HBox fx:id="bottomPanel"
+          styleClass="bottom-panel"
+          AnchorPane.bottomAnchor="0"
+          AnchorPane.leftAnchor="0"
+          AnchorPane.rightAnchor="0"
+          prefHeight="30">
+
+        <Label fx:id="modelInfoLabel"
+               text="Модель не загружена"
+               styleClass="model-info-label"/>
+
+    </HBox>
+
 </AnchorPane>

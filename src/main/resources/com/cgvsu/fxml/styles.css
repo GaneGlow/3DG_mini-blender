@@ -1,0 +1,253 @@
+/* ===== ОСНОВНЫЕ СТИЛИ ===== */
+
+/* Корневой AnchorPane */
+.root-pane {
+    -fx-background-color: #424242;
+}
+
+/* ===== МЕНЮ И МЕНЮ-БАР ===== */
+
+/* MenuBar */
+.menu-bar {
+    -fx-background-color: #424242;
+    -fx-border-color: #555555;
+    -fx-border-width: 1px 0 0 0;
+    -fx-padding: 0;
+}
+
+/* Menu в строке меню */
+.menu {
+    -fx-background-color: transparent;
+    -fx-text-fill: white;
+    -fx-font-size: 14px;
+    -fx-font-weight: normal;
+    -fx-padding: 8 15 8 15;
+    -fx-background-radius: 0;
+}
+
+/* Menu при наведении */
+.menu:hover {
+    -fx-background-color: #313131;
+}
+
+/* Menu когда открыто */
+.menu:showing {
+    -fx-background-color: #313131;
+}
+
+/* Контекстное меню (выпадающий список) */
+.context-menu {
+    -fx-background-color: #424242;
+    -fx-border-color: #313131;
+    -fx-border-width: 1;
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+    -fx-padding: 4 0 4 0;
+    -fx-background-insets: 0;
+}
+
+/* MenuItem внутри контекстного меню */
+.menu-item {
+    -fx-background-color: transparent;
+    -fx-text-fill: white;
+    -fx-font-size: 14px;
+    -fx-padding: 8 20 8 15;
+    -fx-background-insets: 0;
+    -fx-background-radius: 0;
+}
+
+/* MenuItem при наведении */
+.menu-item:hover {
+    -fx-background-color: #0078d4;
+}
+
+/* MenuItem при фокусе */
+.menu-item:focused {
+    -fx-background-color: #005a9e;
+}
+
+/* MenuItem когда нажат */
+.menu-item:pressed {
+    -fx-background-color: #004578;
+}
+
+/* Текст акселератора в MenuItem */
+.menu-item .accelerator-text {
+    -fx-text-fill: #a0a0a0;
+    -fx-font-size: 12px;
+}
+
+/* Текст акселератора при наведении */
+.menu-item:hover .accelerator-text {
+    -fx-text-fill: rgba(255, 255, 255, 0.8);
+}
+
+/* Разделитель в меню */
+.separator-menu-item .line {
+    -fx-border-color: #313131;
+    -fx-border-width: 1 0 0 0;
+}
+
+/* ===== ОСНОВНАЯ ОБЛАСТЬ С CANVAS ===== */
+
+/* Контейнер для Canvas */
+.canvas-container {
+    -fx-background-color: #313131;
+    -fx-border-color: #313131;
+    -fx-border-width: 0 1 0 0;
+}
+
+/* ===== ПРАВАЯ ПАНЕЛЬ ===== */
+
+/* Правая панель управления */
+.right-panel {
+    -fx-background-color: #424242;
+    -fx-border-color: #313131;
+    -fx-border-width: 0 0 0 1;
+    -fx-padding: 15;
+    -fx-spacing: 10;
+}
+
+/* Заголовок правой панели */
+.right-panel-title {
+    -fx-font-weight: bold;
+    -fx-font-size: 16px;
+    -fx-text-fill: white;
+    -fx-padding: 0 0 10 0;
+}
+
+.bottom-panel {
+    -fx-background-color: #424242;
+    -fx-padding: 5px 15px;
+    -fx-border-color: #555555;
+    -fx-border-width: 1px 0 0 0;
+    -fx-alignment: center-left;
+}
+
+/* ===== ПАНЕЛЬ НАСТРОЕК ===== */
+
+/* Панель с чекбоксами */
+.settings-panel {
+    -fx-spacing: 6;
+    -fx-padding: 0;
+}
+
+/* Чекбоксы */
+.check-box {
+    -fx-text-fill: white;
+    -fx-font-size: 14px;
+}
+
+/* Контейнер чекбокса */
+.check-box .box {
+    -fx-background-color: #424242;
+    -fx-border-color: #a0a0a0;
+    -fx-border-width: 1;
+    -fx-border-radius: 3;
+}
+
+/* Чекбокс при наведении */
+.check-box:hover .box {
+    -fx-border-color: #0078d4;
+}
+
+/* Отмеченный чекбокс */
+.check-box:selected .box {
+    -fx-background-color: #0078d4;
+    -fx-border-color: #0078d4;
+}
+
+/* Галочка в чекбоксе */
+.check-box:selected .mark {
+    -fx-background-color: white;
+}
+
+/* ===== СТИЛИ ДЛЯ ВСЕГО ТЕКСТА ===== */
+
+/* Все Label по умолчанию */
+.label {
+    -fx-text-fill: white;
+}
+
+/* ===== SCROLLBAR СТИЛИ (если понадобится) ===== */
+
+.scroll-bar {
+    -fx-background-color: #424242;
+}
+
+.scroll-bar .thumb {
+    -fx-background-color: #313131;
+    -fx-background-radius: 5;
+}
+
+.scroll-bar .thumb:hover {
+    -fx-background-color: #515151;
+}
+
+.scroll-bar .track {
+    -fx-background-color: #424242;
+}
+
+.scroll-bar .increment-button,
+.scroll-bar .decrement-button {
+    -fx-background-color: transparent;
+}
+
+.scroll-bar .increment-arrow,
+.scroll-bar .decrement-arrow {
+    -fx-background-color: #a0a0a0;
+}
+
+/* ===== КНОПКИ (если добавятся) ===== */
+
+.button {
+    -fx-background-color: #424242;
+    -fx-text-fill: white;
+    -fx-font-size: 14px;
+    -fx-border-color: #a0a0a0;
+    -fx-border-width: 1;
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
+    -fx-padding: 8 15 8 15;
+    -fx-cursor: hand;
+}
+
+.button:hover {
+    -fx-background-color: #0078d4;
+    -fx-border-color: #0078d4;
+}
+
+.button:pressed {
+    -fx-background-color: #005a9e;
+    -fx-border-color: #005a9e;
+}
+
+/* Основная кнопка (primary) */
+.button.primary {
+    -fx-background-color: #0078d4;
+    -fx-border-color: #0078d4;
+}
+
+.button.primary:hover {
+    -fx-background-color: #005a9e;
+}
+
+/* Опасная кнопка (danger) */
+.button.danger {
+    -fx-background-color: #dc3545;
+    -fx-border-color: #dc3545;
+}
+
+.button.danger:hover {
+    -fx-background-color: #c82333;
+}
+
+/* Успешная кнопка (success) */
+.button.success {
+    -fx-background-color: #28a745;
+    -fx-border-color: #28a745;
+}
+
+.button.success:hover {
+    -fx-background-color: #218838;
+}

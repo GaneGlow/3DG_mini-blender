@@ -56,8 +56,8 @@ public class RenderEngine {
             }
         }
 
-        /*Шаг 2: Рисуем полигональную сетку черным цветом поверх заливки
-        graphicsContext.setStroke(Color.BLACK);
+        // Шаг 2: Рисуем полигональную сетку черным цветом поверх заливки
+        graphicsContext.setStroke(Color.WHITE);
         graphicsContext.setLineWidth(1.0);
 
         for (int polygonInd = 0; polygonInd < nPolygons; ++polygonInd) {
@@ -88,6 +88,6 @@ public class RenderEngine {
                         resultPoints.get(0).x,
                         resultPoints.get(0).y);
             }
-        }*/
+        }
     }
 }
