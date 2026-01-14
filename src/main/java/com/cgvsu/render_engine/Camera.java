@@ -47,6 +47,10 @@ public class Camera {
         this.target.add(target);
     }
 
+    public float getFov() { return fov; }
+
+    public void setFov(float fov) { this.fov = fov; }
+
     Matrix4 getViewMatrix() {
         return GraphicConveyor.lookAt(position, target);
     }
