@@ -28,6 +28,9 @@ public class RenderEngine {
         // Очистка экрана
         graphicsContext.clearRect(0, 0, width, height);
 
+        graphicsContext.setStroke(Color.WHITE);
+        graphicsContext.setLineWidth(1.0);
+
         // Инициализация Z-буфера
         ZBuffer zBuffer = new ZBuffer(width, height);
         zBuffer.clear();
@@ -209,8 +212,7 @@ public class RenderEngine {
             }
         }
 
-        graphicsContext.setStroke(Color.WHITE);
-        graphicsContext.setLineWidth(1.0);
+
         // Нормали преобразуются обратной транспонированной матрицей
         Matrix3 rotationScale = new Matrix3(m);
         return rotationScale.inverse().transpose();

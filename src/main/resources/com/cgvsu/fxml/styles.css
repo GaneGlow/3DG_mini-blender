@@ -124,6 +124,10 @@
     -fx-alignment: center-left;
 }
 
+.texture-info-label {
+    -fx-padding: 0 300 0 0;
+}
+
 /* ===== ПАНЕЛЬ НАСТРОЕК ===== */
 
 /* Панель с чекбоксами */

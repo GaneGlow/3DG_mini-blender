@@ -58,6 +58,9 @@ public class GuiController {
     @FXML
     private Label modelInfoLabel;
 
+    @FXML
+    private Label textureInfoLabel;
+
     private final RenderSettings renderSettings = new RenderSettings();
     private Texture texture = null;
 
@@ -85,6 +88,10 @@ public class GuiController {
 
         if (modelInfoLabel != null) {
             modelInfoLabel.setText("Модель не загружена");
+        }
+
+        if (textureInfoLabel != null) {
+            textureInfoLabel.setText("Текстура не загружена");
         }
 
         timeline = new Timeline();
@@ -138,7 +145,8 @@ public class GuiController {
         camera.setAspectRatio((float) (width / height));
 
         if (mesh != null) {
-            RenderEngine.render(canvas.getGraphicsContext2D(), camera, mesh, (int) width, (int) height);
+            RenderEngine.render(canvas.getGraphicsContext2D(), camera, mesh, texture,
+                    renderSettings, (int) width, (int) height);
         }
     }
 
@@ -173,7 +181,6 @@ public class GuiController {
 
         } catch (IOException exception) {
             System.err.println("Ошибка загрузки модели: " + exception.getMessage());
-            // TODO: обработка ошибок
             System.err.println("Error loading model: " + exception.getMessage());
         }
     }
@@ -183,19 +190,9 @@ public class GuiController {
         FileChooser fileChooser = new FileChooser();
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(
                 "Image Files", "*.png", "*.jpg", "*.jpeg", "*.bmp", "*.gif"));
-        fileChooser.setTitle("Load Texture");
+        //fileChooser.setTitle("Load Texture");
 
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Ошибка");
-            alert.setHeaderText("Не удалось загрузить модель");
-            alert.setContentText(exception.getMessage());
-            alert.showAndWait();
-
-            // Сбрасываем информацию, если ошибка
-            if (modelInfoLabel != null) {
-                modelInfoLabel.setText("Ошибка загрузки модели");
-            }
-        File file = fileChooser.showOpenDialog((Stage) canvas.getScene().getWindow());
+        File file = fileChooser.showOpenDialog(canvas.getScene().getWindow());
         if (file == null) {
             return;
         }
@@ -206,10 +203,17 @@ public class GuiController {
             renderSettings.useTexture = true;
             textureCheckBox.setSelected(true);
 
-            System.out.println("Texture loaded: " + file.getName() +
-                    " (" + (int)image.getWidth() + "x" + (int)image.getHeight() + ")");
+            String textureInfo = String.format("Текстура: %s (%dx%d)",
+                    file.getName(),
+                    (int) image.getWidth(),
+                    (int) image.getHeight());
+
+            if (textureInfoLabel != null) {
+                textureInfoLabel.setText(textureInfo);
+            }
+
         } catch (Exception exception) {
-            System.err.println("Error loading texture: " + exception.getMessage());
+            System.err.println("Ошибка загрузки текстуры: " + exception.getMessage());
         }
     }
 
