@@ -9,5 +9,5 @@ public class RenderSettings {
     public boolean useLighting = false;
 
     public Color baseColor = Color.GRAY;
-    public Image texture = null;
+    //public Image texture = null;
 }

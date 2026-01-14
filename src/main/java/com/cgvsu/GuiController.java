@@ -2,10 +2,9 @@ package com.cgvsu;
 
 import com.cgvsu.math.Vector3;
 import com.cgvsu.model.ModelPreparationUtils;
-import com.cgvsu.model.TriangulatedModel;
+import com.cgvsu.render_engine.Texture;
 import com.cgvsu.render_engine.RenderEngine;
 import com.cgvsu.render_engine.RenderSettings;
-import com.cgvsu.triangulation.Triangulator;
 import javafx.fxml.FXML;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
@@ -26,6 +25,7 @@ import java.io.File;
 import com.cgvsu.model.Model;
 import com.cgvsu.objreader.ObjReader;
 import com.cgvsu.render_engine.Camera;
+import javafx.scene.image.Image;
 
 public class GuiController {
 
@@ -44,12 +44,12 @@ public class GuiController {
     private CheckBox lightingCheckBox;
 
     private final RenderSettings renderSettings = new RenderSettings();
-
+    private Texture texture = null;
 
     private Model mesh = null;
 
     private Camera camera = new Camera(
-            new Vector3(0, 00, 100),
+            new Vector3(0, 0, 100),
             new Vector3(0, 0, 0),
             1.0F, 1, 0.01F, 100);
 
@@ -71,7 +71,15 @@ public class GuiController {
             camera.setAspectRatio((float) (width / height));
 
             if (mesh != null) {
-                RenderEngine.render(canvas.getGraphicsContext2D(), camera, mesh, (int) width, (int) height);
+                RenderEngine.render(
+                        canvas.getGraphicsContext2D(),
+                        camera,
+                        mesh,
+                        texture,
+                        renderSettings,
+                        (int) width,
+                        (int) height
+                );
             }
         });
 
@@ -83,7 +91,6 @@ public class GuiController {
 
         lightingCheckBox.selectedProperty().addListener((o, a, b) ->
                 renderSettings.useLighting = b);
-
 
         timeline.getKeyFrames().add(frame);
         timeline.play();
@@ -104,17 +111,36 @@ public class GuiController {
 
         try {
             String fileContent = Files.readString(fileName);
-            /*mesh = ObjReader.read(fileContent);
-
-            mesh = Triangulator.triangulate(mesh);
-            mesh.recalculateNormals();*/
             mesh = ObjReader.read(fileContent);
             mesh = ModelPreparationUtils.prepare(mesh);
-
-
-            // todo: обработка ошибок
         } catch (IOException exception) {
+            // TODO: обработка ошибок
+            System.err.println("Error loading model: " + exception.getMessage());
+        }
+    }
 
+    @FXML
+    private void onOpenTextureMenuItemClick() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(
+                "Image Files", "*.png", "*.jpg", "*.jpeg", "*.bmp", "*.gif"));
+        fileChooser.setTitle("Load Texture");
+
+        File file = fileChooser.showOpenDialog((Stage) canvas.getScene().getWindow());
+        if (file == null) {
+            return;
+        }
+
+        try {
+            Image image = new Image(file.toURI().toString());
+            texture = new Texture(image);
+            renderSettings.useTexture = true;
+            textureCheckBox.setSelected(true);
+
+            System.out.println("Texture loaded: " + file.getName() +
+                    " (" + (int)image.getWidth() + "x" + (int)image.getHeight() + ")");
+        } catch (Exception exception) {
+            System.err.println("Error loading texture: " + exception.getMessage());
         }
     }
 
