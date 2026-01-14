@@ -17,6 +17,27 @@
             styleClass="root-pane"
             stylesheets="@styles.css">
 
+    <!-- Контейнер для Canvas -->
+    <StackPane styleClass="canvas-container"
+               AnchorPane.leftAnchor="0"
+               AnchorPane.topAnchor="30"
+               AnchorPane.bottomAnchor="0"
+               AnchorPane.rightAnchor="250">
+
+        <Canvas fx:id="canvas" width="1020" height="800"/>
+
+    </StackPane>
+
+    <!-- Правая панель управления -->
+    <VBox fx:id="rightPanel" styleClass="right-panel"
+          AnchorPane.topAnchor="30"
+          AnchorPane.bottomAnchor="0"
+          AnchorPane.rightAnchor="0"
+          prefWidth="250">
+
+        <Label fx:id="panelTitle" styleClass="right-panel-title"/>
+
+    </VBox>
     <!-- MenuBar -->
     <MenuBar styleClass="menu-bar"
              AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0">
@@ -77,32 +98,14 @@
         </Menu>
     </MenuBar>
 
-    <!-- Контейнер для Canvas -->
-    <StackPane styleClass="canvas-container"
-               AnchorPane.leftAnchor="0"
-               AnchorPane.topAnchor="30"
-               AnchorPane.bottomAnchor="0"
-               AnchorPane.rightAnchor="250">
 
-        <Canvas fx:id="canvas" width="1020" height="800"/>
 
-    </StackPane>
 
-    <!-- Правая панель управления -->
-    <VBox fx:id="rightPanel" styleClass="right-panel"
-          AnchorPane.topAnchor="30"
-          AnchorPane.bottomAnchor="0"
-          AnchorPane.rightAnchor="0"
-          prefWidth="250">
-
-        <Label fx:id="panelTitle" styleClass="right-panel-title"/>
-
-    </VBox>
 
     <!-- Панель настроек -->
     <VBox styleClass="settings-panel"
-          AnchorPane.rightAnchor="10"
-          AnchorPane.topAnchor="40">
+          AnchorPane.rightAnchor="30"
+          AnchorPane.topAnchor="50">
 
         <CheckBox fx:id="wireframeCheckBox" text="Рисовать сетку" styleClass="check-box"/>
 

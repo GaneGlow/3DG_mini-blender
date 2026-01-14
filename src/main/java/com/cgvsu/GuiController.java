@@ -141,7 +141,7 @@ public class GuiController {
             mesh = ModelPreparationUtils.prepare(mesh);
 
             // Обновляем информацию о модели на нижней панели
-            String infoText = String.format("Файл: %s | Вершин: %d | Полигонов: %d",
+            String infoText = String.format("Файл: %s || Вершин: %d || Полигонов: %d",
                     file.getName(),
                     mesh.vertices.size(),
                     mesh.polygons.size());

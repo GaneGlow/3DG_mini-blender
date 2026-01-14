@@ -56,7 +56,6 @@ public class RenderEngine {
             }
         }
 
-        // Шаг 2: Рисуем полигональную сетку черным цветом поверх заливки
         graphicsContext.setStroke(Color.WHITE);
         graphicsContext.setLineWidth(1.0);
 
