@@ -297,93 +297,6 @@ public class Rasterization {
         }
     }
 
-    /*public static void drawLineWithZBuffer(
-            PixelWriter pixelWriter,
-            ZBuffer zBuffer,
-            double x1, double y1, double z1,
-            double x2, double y2, double z2,
-            Color color) {
-
-        // Приводим к целочисленным координатам для алгоритма Брезенхема
-        int ix1 = (int)Math.round(x1);
-        int iy1 = (int)Math.round(y1);
-        int ix2 = (int)Math.round(x2);
-        int iy2 = (int)Math.round(y2);
-
-        int dx = Math.abs(ix2 - ix1);
-        int dy = Math.abs(iy2 - iy1);
-
-        int sx = (ix1 < ix2) ? 1 : -1;
-        int sy = (iy1 < iy2) ? 1 : -1;
-
-        int err = dx - dy;
-
-        double currentX = x1;
-        double currentY = y1;
-
-        // Предварительные вычисления для интерполяции
-        double totalLength = Math.sqrt(
-                (x2 - x1) * (x2 - x1) +
-                        (y2 - y1) * (y2 - y1)
-        );
-
-        boolean steep = dy > dx;
-
-        while (true) {
-            int ix = (int)Math.round(currentX);
-            int iy = (int)Math.round(currentY);
-
-            // Вычисляем t для линейной интерполяции Z
-            double t = 0;
-            if (totalLength > 0) {
-                double currentLength = Math.sqrt(
-                        (currentX - x1) * (currentX - x1) +
-                                (currentY - y1) * (currentY - y1)
-                );
-                t = currentLength / totalLength;
-            }
-
-            double currentZ = z1 + t * (z2 - z1);
-
-            // Проверяем границы буфера
-            if (ix >= 0 && ix < zBuffer.getWidth() &&
-                    iy >= 0 && iy < zBuffer.getHeight()) {
-
-                // Проверяем глубину
-                if (currentZ < zBuffer.get(ix, iy)) {
-                    pixelWriter.setColor(ix, iy, color);
-                    zBuffer.set(ix, iy, currentZ);
-                }
-            }
-
-            // Проверяем достижение конечной точки
-            if (Math.abs(ix - ix2) < 1 && Math.abs(iy - iy2) < 1) {
-                break;
-            }
-
-            int e2 = err * 2;
-
-            if (steep) {
-                if (e2 > -dy) {
-                    err -= dy;
-                    currentX += sx;
-                }
-                if (e2 < dx) {
-                    err += dx;
-                    currentY += sy;
-                }
-            } else {
-                if (e2 > -dy) {
-                    err -= dy;
-                    currentY += sy;
-                }
-                if (e2 < dx) {
-                    err += dx;
-                    currentX += sx;
-                }
-            }
-        }
-    }*/
     /**
      * Рисует линию с учетом Z-буфера
      */
@@ -410,67 +323,57 @@ public class Rasterization {
             double x2, double y2, double z2,
             Color color) {
 
-        int ix1 = (int) Math.round(x1);
-        int iy1 = (int) Math.round(y1);
-        int ix2 = (int) Math.round(x2);
-        int iy2 = (int) Math.round(y2);
+        int x0 = (int) Math.round(x1);
+        int y0 = (int) Math.round(y1);
+        int x1i = (int) Math.round(x2);
+        int y1i = (int) Math.round(y2);
 
-        int dx = Math.abs(ix2 - ix1);
-        int dy = Math.abs(iy2 - iy1);
+        int dx = Math.abs(x1i - x0);
+        int dy = Math.abs(y1i - y0);
 
-        int sx = (ix1 < ix2) ? 1 : -1;
-        int sy = (iy1 < iy2) ? 1 : -1;
+        int sx = Integer.compare(x1i, x0); // ✅ -1, 0, +1
+        int sy = Integer.compare(y1i, y0); // ✅ -1, 0, +1
 
         int err = dx - dy;
 
-        double currentX = x1;
-        double currentY = y1;
-
-        // Длина линии для интерполяции Z
-        double lineLength = Math.sqrt(
-                (x2 - x1) * (x2 - x1) +
-                        (y2 - y1) * (y2 - y1)
-        );
+        int steps = Math.max(dx, dy);
+        double dz = (steps == 0) ? 0.0 : (z2 - z1) / steps;
+        double z = z1;
 
         while (true) {
-            int ix = (int) Math.round(currentX);
-            int iy = (int) Math.round(currentY);
 
-            // Интерполируем Z
-            double t = 0;
-            if (lineLength > 0) {
-                double currentDist = Math.sqrt(
-                        (currentX - x1) * (currentX - x1) +
-                                (currentY - y1) * (currentY - y1)
-                );
-                t = currentDist / lineLength;
+            if (x0 >= 0 && x0 < zBuffer.getWidth()
+                    && y0 >= 0 && y0 < zBuffer.getHeight()) {
+
+                if (z < zBuffer.get(x0, y0)) {
+                    zBuffer.set(x0, y0, z);
+                    pixelWriter.setColor(x0, y0, color);
+                }
             }
 
-            double currentZ = z1 + t * (z2 - z1);
-
-            // Проверяем границы и глубину
-            if (ix >= 0 && ix < zBuffer.getWidth() &&
-                    iy >= 0 && iy < zBuffer.getHeight() &&
-                    currentZ < zBuffer.get(ix, iy)) {
-
-                pixelWriter.setColor(ix, iy, color);
-                zBuffer.set(ix, iy, currentZ);
-            }
-
-            // Проверяем достижение конечной точки
-            if (Math.abs(ix - ix2) < 1 && Math.abs(iy - iy2) < 1) {
+            if (x0 == x1i && y0 == y1i) {
                 break;
             }
 
-            int e2 = err * 2;
+            int e2 = 2 * err;
+
             if (e2 > -dy) {
                 err -= dy;
-                currentX += sx;
+                x0 += sx;
             }
+
             if (e2 < dx) {
                 err += dx;
-                currentY += sy;
+                y0 += sy;
             }
+
+            z += dz;
         }
     }
+
+
+
+
+
+
 }

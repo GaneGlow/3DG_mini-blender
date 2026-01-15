@@ -62,12 +62,19 @@ public final class Vector3 {
         return x * x + y * y + z * z;
     }
 
-    public Vector3 normalized() {
+    /*public Vector3 normalized() {
         float len = length();
         if (len < EPS) {
             throw new ArithmeticException("Невозможно привести нулевой вектор к нормализованному виду!");
         }
         return divide(len);
+    }*/
+    public Vector3 normalized() {
+        float length = (float) Math.sqrt(x * x + y * y + z * z);
+        if (length == 0) {
+            return new Vector3(0, 0, 0);
+        }
+        return new Vector3(x / length, y / length, z / length);
     }
 
     public boolean approxEquals(Vector3 o, float eps) {

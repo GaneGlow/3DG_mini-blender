@@ -5,12 +5,8 @@ import com.cgvsu.math.Vector3;
 
 public class Lighting {
 
-    /**
-     * Источник света.
-     * Содержит направление (для направленного света) и цвет.
-     */
     public static class Light {
-        public final Vector3 direction; // Направление света (должно быть нормализовано)
+        public final Vector3 direction;
         public final Color color;
         public final float intensity;
 
@@ -25,38 +21,19 @@ public class Lighting {
         }
     }
 
-    /**
-     * Вычисляет коэффициент освещенности по методичке (страница 10).
-     * Яркость цвета в точке зависит от того, под каким углом на неё падает луч света.
-     *
-     * Формула из методички:
-     * l = -n⃗ · r⃗ a y
-     * где n⃗ - нормаль в точке, r⃗ - направление луча света
-     *
-     * После нормализации получаем коэффициент l в диапазоне [0, 1]
-     * Если l отрицательный, это означает, что луч приходит изнутри модели
-     */
     public static float calculateLightingCoefficient(Vector3 normal, Vector3 lightDirection) {
-        // Нормализуем векторы
         normal = normal.normalized();
         lightDirection = lightDirection.normalized();
 
-        // Скалярное произведение (косинус угла между нормалью и направлением света)
         float dotProduct = normal.dot(lightDirection);
 
-        // Согласно методичке, если dotProduct отрицательный, это означает,
-        // что луч приходит изнутри модели
         if (dotProduct < 0) {
-            return 0; // Не освещаем
+            return 0;
         }
 
         return dotProduct;
     }
 
-    /**
-     * Простейшая модель освещения согласно методичке.
-     * Яркость цвета = базовый цвет * коэффициент освещенности.
-     */
     public static Color applySimpleLighting(Color baseColor, Vector3 normal, Light light) {
         float coefficient = calculateLightingCoefficient(normal, light.direction);
 
