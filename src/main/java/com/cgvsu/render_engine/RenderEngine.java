@@ -9,18 +9,14 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.PixelWriter;
 import javafx.scene.paint.Color;
 
-import java.util.List;
 import java.util.HashSet;
 import java.util.Set;
-
+import java.util.List;
 import java.util.ArrayList;
 
 import static com.cgvsu.rasterization.Rasterization.drawLineWithZBuffer;
 
 public class RenderEngine {
-
-    // Z-буфер для треугольников (сохраняем между проходами)
-    private static ZBuffer triangleZBuffer;
 
     public static void render(
             final GraphicsContext graphicsContext,
@@ -34,33 +30,9 @@ public class RenderEngine {
         // Очистка экрана
         graphicsContext.clearRect(0, 0, width, height);
 
-        graphicsContext.setStroke(Color.WHITE);
-        graphicsContext.setLineWidth(1.0);
-
-        // ПЕРВЫЙ ПРОХОД: Отрисовка треугольников с Z-буфером
-        renderTriangles(graphicsContext, camera, mesh, texture, settings, width, height);
-
-        // ВТОРОЙ ПРОХОД: Отрисовка полигональной сетки (если нужно)
-        if (settings.drawWireframe) {
-            renderWireframe(graphicsContext, camera, mesh, width, height);
-        }
-    }
-
-    /**
-     * Рендерит только треугольники (заполнение)
-     */
-    private static void renderTriangles(
-            final GraphicsContext graphicsContext,
-            final Camera camera,
-            final Model mesh,
-            final Texture texture,
-            final RenderSettings settings,
-            final int width,
-            final int height) {
-
-        // Инициализация Z-буфера для треугольников
-        triangleZBuffer = new ZBuffer(width, height);
-        triangleZBuffer.clear();
+        // Инициализация Z-буфера
+        ZBuffer zBuffer = new ZBuffer(width, height);
+        zBuffer.clear();
 
         for (SceneObject sceneObject : sceneObjects) {
             if (!sceneObject.isVisible()) {
@@ -68,8 +40,6 @@ public class RenderEngine {
             }
 
             Model mesh = sceneObject.getModel();
-            //Texture texture = sceneObject.getTexture();
-
             Color wireframeColor = sceneObject.getWireframeColor();
             Color baseColor = sceneObject.getModelColor();
 
@@ -81,80 +51,124 @@ public class RenderEngine {
                 objectSettings = globalSettings;
             }
 
-            // Матрицы преобразования
-            Matrix4 modelMatrix = GraphicConveyor.rotateScaleTranslate();
-            Matrix4 viewMatrix = camera.getViewMatrix();
-            Matrix4 projectionMatrix = camera.getProjectionMatrix();
+            // ПЕРВЫЙ ПРОХОД: Отрисовка треугольников с Z-буфером
+            renderTriangles(graphicsContext, camera, mesh, texture, objectSettings, baseColor, zBuffer, width, height);
 
-            Matrix4 modelViewProjectionMatrix = modelMatrix.multiply(viewMatrix).multiply(projectionMatrix);
+            // ВТОРОЙ ПРОХОД: Отрисовка полигональной сетки (если нужно)
+            if (objectSettings.drawWireframe) {
+                renderWireframe(graphicsContext, camera, mesh, wireframeColor, zBuffer, width, height);
+            }
+        }
+    }
 
-            // Источник освещения (привязан к камере)
-            Lighting.Light light = Lighting.createCameraLight(
-                    camera.getPosition(),
-                    camera.getTarget()
-            );
+    public static void render(
+            final GraphicsContext graphicsContext,
+            final Camera camera,
+            final Model mesh,
+            final Texture texture,
+            final RenderSettings settings,
+            final int width,
+            final int height) {
 
-            // Матрица вида-модели для нормалей
-            Matrix4 modelViewMatrix = modelMatrix.multiply(viewMatrix);
+        // Создаем временный список с одним объектом
+        List<SceneObject> singleObjectList = new ArrayList<>();
+        SceneObject singleObject = new SceneObject("SingleObject", mesh, texture);
+        singleObject.setWireframeColor(Color.WHITE);
+        singleObject.setModelColor(settings.baseColor);
+        singleObjectList.add(singleObject);
 
-            // Проходим по всем полигонам (треугольникам)
-            for (Polygon polygon : mesh.polygons) {
-                if (polygon.getVertexIndices().size() != 3) {
-                    continue; // Пропускаем не-треугольники
-                }
+        // Вызываем новую версию метода
+        render(graphicsContext, camera, singleObjectList, texture, settings, width, height);
+    }
 
-                // Индексы вершин треугольника
-                int vIdx1 = polygon.getVertexIndices().get(0);
-                int vIdx2 = polygon.getVertexIndices().get(1);
-                int vIdx3 = polygon.getVertexIndices().get(2);
+    /**
+     * Рендерит только треугольники (заполнение)
+     */
+    private static void renderTriangles(
+            final GraphicsContext graphicsContext,
+            final Camera camera,
+            final Model mesh,
+            final Texture texture,
+            final RenderSettings settings,
+            final Color baseColor,
+            final ZBuffer zBuffer,
+            final int width,
+            final int height) {
 
-                // Координаты вершин
-                Vector3 v1 = mesh.vertices.get(vIdx1);
-                Vector3 v2 = mesh.vertices.get(vIdx2);
-                Vector3 v3 = mesh.vertices.get(vIdx3);
+        // Матрицы преобразования
+        Matrix4 modelMatrix = GraphicConveyor.rotateScaleTranslate();
+        Matrix4 viewMatrix = camera.getViewMatrix();
+        Matrix4 projectionMatrix = camera.getProjectionMatrix();
 
-                // Преобразуем вершины в экранные координаты
-                Vector3 projV1 = transformVertex(v1, modelViewProjectionMatrix, width, height);
-                Vector3 projV2 = transformVertex(v2, modelViewProjectionMatrix, width, height);
-                Vector3 projV3 = transformVertex(v3, modelViewProjectionMatrix, width, height);
+        Matrix4 modelViewProjectionMatrix = modelMatrix.multiply(viewMatrix).multiply(projectionMatrix);
 
-                // Проверяем видимость треугольника (back-face culling)
-                if (!isTriangleVisible(projV1, projV2, projV3)) {
-                    continue;
-                }
+        // Источник освещения (привязан к камере)
+        Lighting.Light light = Lighting.createCameraLight(
+                camera.getPosition(),
+                camera.getTarget()
+        );
 
-                // --- ОТРИСОВКА ЗАПОЛНЕНИЯ ---
-                if (objectSettings.useTexture && texture != null &&
-                        polygon.getTextureVertexIndices().size() == 3) {
+        // Матрица вида-модели для нормалей
+        Matrix4 modelViewMatrix = modelMatrix.multiply(viewMatrix);
 
-                    // ТЕКСТУРИРОВАННЫЙ ТРЕУГОЛЬНИК
-                    int tIdx1 = polygon.getTextureVertexIndices().get(0);
-                    int tIdx2 = polygon.getTextureVertexIndices().get(1);
-                    int tIdx3 = polygon.getTextureVertexIndices().get(2);
+        // Проходим по всем полигонам (треугольникам)
+        for (Polygon polygon : mesh.polygons) {
+            if (polygon.getVertexIndices().size() != 3) {
+                continue; // Пропускаем не-треугольники
+            }
 
-                    Vector2 tex1 = mesh.textureVertices.get(tIdx1);
-                    Vector2 tex2 = mesh.textureVertices.get(tIdx2);
-                    Vector2 tex3 = mesh.textureVertices.get(tIdx3);
+            // Индексы вершин треугольника
+            int vIdx1 = polygon.getVertexIndices().get(0);
+            int vIdx2 = polygon.getVertexIndices().get(1);
+            int vIdx3 = polygon.getVertexIndices().get(2);
 
-                    if (objectSettings.useLighting && polygon.getNormalIndices().size() == 3) {
-                        // Текстура + освещение
-                        int nIdx1 = polygon.getNormalIndices().get(0);
-                        int nIdx2 = polygon.getNormalIndices().get(1);
-                        int nIdx3 = polygon.getNormalIndices().get(2);
+            // Координаты вершин
+            Vector3 v1 = mesh.vertices.get(vIdx1);
+            Vector3 v2 = mesh.vertices.get(vIdx2);
+            Vector3 v3 = mesh.vertices.get(vIdx3);
 
-                        Vector3 n1 = mesh.normals.get(nIdx1);
-                        Vector3 n2 = mesh.normals.get(nIdx2);
-                        Vector3 n3 = mesh.normals.get(nIdx3);
+            // Преобразуем вершины в экранные координаты
+            Vector3 projV1 = transformVertex(v1, modelViewProjectionMatrix, width, height);
+            Vector3 projV2 = transformVertex(v2, modelViewProjectionMatrix, width, height);
+            Vector3 projV3 = transformVertex(v3, modelViewProjectionMatrix, width, height);
 
-                        // Преобразуем нормали
-                        Matrix3 normalMatrix = calculateNormalMatrix(modelViewMatrix);
-                        Vector3 transformedN1 = transformNormal(n1, normalMatrix);
-                        Vector3 transformedN2 = transformNormal(n2, normalMatrix);
-                        Vector3 transformedN3 = transformNormal(n3, normalMatrix);
+            // Проверяем видимость треугольника (back-face culling)
+            if (!isTriangleVisible(projV1, projV2, projV3)) {
+                continue;
+            }
+
+            // --- ОТРИСОВКА ЗАПОЛНЕНИЯ ---
+            if (settings.useTexture && texture != null &&
+                    polygon.getTextureVertexIndices().size() == 3) {
+
+                // ТЕКСТУРИРОВАННЫЙ ТРЕУГОЛЬНИК
+                int tIdx1 = polygon.getTextureVertexIndices().get(0);
+                int tIdx2 = polygon.getTextureVertexIndices().get(1);
+                int tIdx3 = polygon.getTextureVertexIndices().get(2);
+
+                Vector2 tex1 = mesh.textureVertices.get(tIdx1);
+                Vector2 tex2 = mesh.textureVertices.get(tIdx2);
+                Vector2 tex3 = mesh.textureVertices.get(tIdx3);
+
+                if (settings.useLighting && polygon.getNormalIndices().size() == 3) {
+                    // Текстура + освещение
+                    int nIdx1 = polygon.getNormalIndices().get(0);
+                    int nIdx2 = polygon.getNormalIndices().get(1);
+                    int nIdx3 = polygon.getNormalIndices().get(2);
+
+                    Vector3 n1 = mesh.normals.get(nIdx1);
+                    Vector3 n2 = mesh.normals.get(nIdx2);
+                    Vector3 n3 = mesh.normals.get(nIdx3);
+
+                    // Преобразуем нормали
+                    Matrix3 normalMatrix = calculateNormalMatrix(modelViewMatrix);
+                    Vector3 transformedN1 = transformNormal(n1, normalMatrix);
+                    Vector3 transformedN2 = transformNormal(n2, normalMatrix);
+                    Vector3 transformedN3 = transformNormal(n3, normalMatrix);
 
                     drawTexturedTriangleWithLighting(
                             graphicsContext.getPixelWriter(),
-                            triangleZBuffer,
+                            zBuffer,
                             projV1, projV2, projV3,
                             tex1, tex2, tex3,
                             transformedN1, transformedN2, transformedN3,
@@ -164,7 +178,7 @@ public class RenderEngine {
                     // Только текстура
                     Rasterization.fillTriangleTextured(
                             graphicsContext.getPixelWriter(),
-                            triangleZBuffer,
+                            zBuffer,
                             projV1.x, projV1.y, projV1.z, tex1.x, tex1.y,
                             projV2.x, projV2.y, projV2.z, tex2.x, tex2.y,
                             projV3.x, projV3.y, projV3.z, tex3.x, tex3.y,
@@ -178,23 +192,23 @@ public class RenderEngine {
                 int nIdx2 = polygon.getNormalIndices().get(1);
                 int nIdx3 = polygon.getNormalIndices().get(2);
 
-                    Vector3 n1 = mesh.normals.get(nIdx1);
-                    Vector3 n2 = mesh.normals.get(nIdx2);
-                    Vector3 n3 = mesh.normals.get(nIdx3);
+                Vector3 n1 = mesh.normals.get(nIdx1);
+                Vector3 n2 = mesh.normals.get(nIdx2);
+                Vector3 n3 = mesh.normals.get(nIdx3);
 
-                    // Преобразуем нормали
-                    Matrix3 normalMatrix = calculateNormalMatrix(modelViewMatrix);
-                    Vector3 transformedN1 = transformNormal(n1, normalMatrix);
-                    Vector3 transformedN2 = transformNormal(n2, normalMatrix);
-                    Vector3 transformedN3 = transformNormal(n3, normalMatrix);
+                // Преобразуем нормали
+                Matrix3 normalMatrix = calculateNormalMatrix(modelViewMatrix);
+                Vector3 transformedN1 = transformNormal(n1, normalMatrix);
+                Vector3 transformedN2 = transformNormal(n2, normalMatrix);
+                Vector3 transformedN3 = transformNormal(n3, normalMatrix);
 
                 // Рисуем треугольник с интерполяцией нормалей
                 drawLitTriangleWithNormalInterpolation(
                         graphicsContext,
-                        triangleZBuffer,
+                        zBuffer,
                         projV1, projV2, projV3,
                         transformedN1, transformedN2, transformedN3,
-                        settings.baseColor,
+                        baseColor,
                         light
                 );
             }
@@ -202,11 +216,11 @@ public class RenderEngine {
                 // ПРОСТОЙ ТРЕУГОЛЬНИК (без текстуры и освещения)
                 Rasterization.fillTriangle(
                         graphicsContext,
-                        triangleZBuffer,
+                        zBuffer,
                         projV1.x, projV1.y, projV1.z,
                         projV2.x, projV2.y, projV2.z,
                         projV3.x, projV3.y, projV3.z,
-                        settings.baseColor
+                        baseColor
                 );
             }
         }
@@ -219,6 +233,8 @@ public class RenderEngine {
             final GraphicsContext graphicsContext,
             final Camera camera,
             final Model mesh,
+            final Color wireframeColor,
+            final ZBuffer zBuffer,
             final int width,
             final int height) {
 
@@ -274,42 +290,21 @@ public class RenderEngine {
             Vector3 v1Offset = new Vector3(v1.x, v1.y, v1.z + zOffset);
             Vector3 v2Offset = new Vector3(v2.x, v2.y, v2.z + zOffset);
 
-            drawLineWithZBuffer(pixelWriter, lineZBuffer, v1Offset, v2Offset, Color.BLACK);
+            drawLineWithZBuffer(pixelWriter, lineZBuffer, v1Offset, v2Offset, wireframeColor);
         }
     }
 
-    public static void render(
-            final GraphicsContext graphicsContext,
-            final Camera camera,
-            final Model mesh,
-            final Texture texture,
-            final RenderSettings settings,
-            final int width,
-            final int height) {
+    // ============= ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ =============
 
-        // Создаем временный список с одним объектом
-        List<SceneObject> singleObjectList = new ArrayList<>();
-        SceneObject singleObject = new SceneObject("SingleObject", mesh, texture);
-        singleObject.setWireframeColor(Color.WHITE);
-        singleObject.setModelColor(settings.baseColor);
-        singleObjectList.add(singleObject);
-
-        // Вызываем новую версию метода
-        render(graphicsContext, camera, singleObjectList, texture, settings, width, height);
-        //render(graphicsContext, camera, singleObjectList, settings, width, height);
-    }
-
-        // ============= ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ =============
-
-        /**
-         * Преобразует вершину из мировых в экранные координаты
-         */
-        private static Vector3 transformVertex (Vector3 vertex, Matrix4 modelViewProjectionMatrix,
-        int width, int height){
-            // Применяем матрицу преобразования
-            Vector3 transformed = GraphicConveyor.multiplyMatrix4ByVector3(
-                    modelViewProjectionMatrix, vertex
-            );
+    /**
+     * Преобразует вершину из мировых в экранные координаты
+     */
+    private static Vector3 transformVertex(Vector3 vertex, Matrix4 modelViewProjectionMatrix,
+                                           int width, int height) {
+        // Применяем матрицу преобразования
+        Vector3 transformed = GraphicConveyor.multiplyMatrix4ByVector3(
+                modelViewProjectionMatrix, vertex
+        );
 
         // Преобразуем в экранные координаты
         float screenX = (transformed.x + 1.0f) * width / 2.0f;
