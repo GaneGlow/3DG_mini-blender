@@ -125,6 +125,42 @@
                 </accelerator>
             </MenuItem>
         </Menu>
+
+        <!-- Меню вид -->
+        <Menu mnemonicParsing="false" text="Вид" styleClass="menu">
+            <MenuItem mnemonicParsing="false" onAction="#onOpenModelMenuItemClick" text="Вид 1"
+                      styleClass="menu-item">
+                <!-- пропиши методы для кнопок камеры #onOpenModelMenuItemClick вместо этой строки
+                 во всех кнопках-->
+                <accelerator>
+                    <KeyCodeCombination alt="UP" control="UP" meta="UP" shift="UP" shortcut="UP" code="V"/>
+                </accelerator>
+            </MenuItem>
+            <MenuItem mnemonicParsing="false" onAction="#onOpenTextureMenuItemClick" text="Вид 2"
+                      styleClass="menu-item">
+                <accelerator>
+                    <KeyCodeCombination alt="UP" control="UP" meta="UP" shift="UP" shortcut="UP" code="C"/>
+                </accelerator>
+            </MenuItem>
+            <MenuItem mnemonicParsing="false" onAction="#onExitMenuItemClick" text="Вид 3"
+                      styleClass="menu-item">
+                <accelerator>
+                    <KeyCodeCombination alt="UP" control="UP" meta="UP" shift="UP" shortcut="UP" code="X"/>
+                </accelerator>
+            </MenuItem>
+            <MenuItem mnemonicParsing="false" onAction="#onExitMenuItemClick" text="Вид 4"
+                      styleClass="menu-item">
+                <accelerator>
+                    <KeyCodeCombination alt="UP" control="UP" meta="UP" shift="UP" shortcut="UP" code="B"/>
+                </accelerator>
+            </MenuItem>
+            <MenuItem mnemonicParsing="false" onAction="#onExitMenuItemClick" text="Добавить камеру"
+                      styleClass="menu-item">
+                <accelerator>
+                    <KeyCodeCombination alt="UP" control="DOWN" meta="UP" shift="UP" shortcut="UP" code="A"/>
+                </accelerator>
+            </MenuItem>
+        </Menu>
     </MenuBar>
 
     <!-- Панель настроек -->
