@@ -26,10 +26,12 @@ import java.io.IOException;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import com.cgvsu.model.Model;
 import com.cgvsu.objreader.ObjReader;
 import javafx.scene.image.Image;
+import javafx.util.converter.DoubleStringConverter;
 
 public class GuiController {
 
@@ -61,6 +63,33 @@ public class GuiController {
 
     @FXML
     private Label textureInfoLabel;
+
+    @FXML
+    private Spinner<Double> translationXSpinner;
+
+    @FXML
+    private Spinner<Double> translationYSpinner;
+
+    @FXML
+    private Spinner<Double> translationZSpinner;
+
+    @FXML
+    private Spinner<Double> rotationXSpinner;
+
+    @FXML
+    private Spinner<Double> rotationYSpinner;
+
+    @FXML
+    private Spinner<Double> rotationZSpinner;
+
+    @FXML
+    private Spinner<Double> scaleXSpinner;
+
+    @FXML
+    private Spinner<Double> scaleYSpinner;
+
+    @FXML
+    private Spinner<Double> scaleZSpinner;
 
     private final RenderSettings renderSettings = new RenderSettings();
     private final List<SceneObject> sceneObjects = new ArrayList<>(); // Добавляем список объектов
@@ -121,6 +150,24 @@ public class GuiController {
             }
         });
 
+        setupSpinner(translationXSpinner, 0.0, "X", -1000.0, 1000.0);
+
+        setupSpinner(translationYSpinner, 0.0, "Y", -1000.0, 1000.0);
+
+        setupSpinner(translationZSpinner, 0.0, "Z", -1000.0, 1000.0);
+
+        setupSpinner(rotationXSpinner, 0.0, "X", -1000.0, 1000.0);
+
+        setupSpinner(rotationYSpinner, 0.0, "Y", -1000.0, 1000.0);
+
+        setupSpinner(rotationZSpinner, 0.0, "Z", -1000.0, 1000.0);
+
+        setupSpinner(scaleXSpinner, 0.0, "X", -1000.0, 1000.0);
+
+        setupSpinner(scaleYSpinner, 0.0, "Y", -1000.0, 1000.0);
+
+        setupSpinner(scaleZSpinner, 0.0, "Z", -1000.0, 1000.0);
+
         timeline = new Timeline();
         timeline.setCycleCount(Animation.INDEFINITE);
 
@@ -163,6 +210,89 @@ public class GuiController {
 
         timeline.getKeyFrames().add(frame);
         timeline.play();
+    }
+
+    private void setupSpinner(Spinner<Double> spinner, double initialValue, String axis, double min, double max) {
+        if (spinner == null) {
+            return;
+        }
+
+        // Очищаем текущую фабрику значений
+        spinner.setValueFactory(null);
+
+        // Создаем новую фабрику значений с правильными параметрами
+        SpinnerValueFactory<Double> valueFactory =
+                new SpinnerValueFactory.DoubleSpinnerValueFactory(min, max, initialValue, 0.1);
+        spinner.setValueFactory(valueFactory);
+
+        // Настраиваем форматирование отображения (2 знака после запятой)
+        spinner.getValueFactory().setConverter(new DoubleStringConverter() {
+            @Override
+            public String toString(Double value) {
+                return String.format("%.2f", value);
+            }
+
+            @Override
+            public Double fromString(String string) {
+                try {
+                    // Очищаем строку от лишних символов
+                    string = string.replace(',', '.');
+                    return Double.parseDouble(string);
+                } catch (NumberFormatException e) {
+                    // Возвращаем текущее значение при ошибке
+                    return spinner.getValue();
+                }
+            }
+        });
+
+        // Разрешаем редактирование вручную
+        spinner.setEditable(true);
+
+        // Добавляем слушатель изменения значения
+        spinner.valueProperty().addListener((obs, oldValue, newValue) -> {
+            // метод для перемещения и тп, я пока не знаю как разделитель слушателя на три коробки
+            // поэтому всё пока что здесь в одной куче
+            // Катя разберись с этим потом!
+        });
+
+        // Обработка ручного ввода
+        spinner.getEditor().setOnAction(event -> {
+            try {
+                String text = spinner.getEditor().getText();
+                text = text.replace(',', '.');
+                double value = Double.parseDouble(text);
+
+                // Проверяем границы
+                if (value < min) value = min;
+                if (value > max) value = max;
+
+                spinner.getValueFactory().setValue(value);
+            } catch (NumberFormatException e) {
+                // Восстанавливаем предыдущее значение при ошибке
+                spinner.getEditor().setText(
+                        String.format("%.2f", spinner.getValue())
+                );
+            }
+        });
+
+        // Также обновляем текст при изменении значения через стрелки
+        spinner.valueProperty().addListener((obs, oldVal, newVal) -> {
+            spinner.getEditor().setText(String.format("%.2f", newVal));
+        });
+    }
+
+    // Метод для применения параметра к выбранным объектам
+    private void applyParameterToSelectedObjects(double value) {
+        if (!selectedObjects.isEmpty()) {
+            System.out.println("Applying parameter " + value + " to " + selectedObjects.size() + " object(s)");
+            for (SceneObject obj : selectedObjects) {
+                // Здесь можно применить параметр к объекту
+                // Например, масштабирование:
+                // obj.setScale(value);
+
+                System.out.println("  - Object: " + obj.getName() + ", value: " + value);
+            }
+        }
     }
 
     // Метод для обновления информации о моделях
@@ -464,6 +594,56 @@ public class GuiController {
         } catch (Exception exception) {
             System.err.println("Ошибка загрузки текстуры: " + exception.getMessage());
         }
+    }
+
+    @FXML
+    private void onDeleteSelectedButtonClick(ActionEvent event) {
+        if (selectedObjects.isEmpty()) {
+            // Показываем уведомление, если ничего не выбрано
+            showAlert("Нет выделенных объектов", "Пожалуйста, выберите один или несколько объектов для удаления.");
+            return;
+        }
+
+        // Спрашиваем подтверждение
+        Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmation.setTitle("Удаление объектов");
+        confirmation.setHeaderText("Удалить выбранные объекты?");
+        confirmation.setContentText("Вы собираетесь удалить " + selectedObjects.size() + " объект(ов).\nЭто действие нельзя отменить.");
+
+        // Настраиваем кнопки
+        ButtonType deleteButton = new ButtonType("Удалить", ButtonBar.ButtonData.OK_DONE);
+        ButtonType cancelButton = new ButtonType("Отмена", ButtonBar.ButtonData.CANCEL_CLOSE);
+        confirmation.getButtonTypes().setAll(deleteButton, cancelButton);
+
+        // Показываем диалог и ждем ответа
+        Optional<ButtonType> result = confirmation.showAndWait();
+
+        if (result.isPresent() && result.get() == deleteButton) {
+            // Удаляем выбранные объекты из сцены
+            sceneObjects.removeAll(selectedObjects);
+
+            // Очищаем список выбранных объектов
+            selectedObjects.clear();
+
+            // Сбрасываем hoveredObject
+            hoveredObject = null;
+
+            // Обновляем UI
+            updateUIFromSelectedObjects();
+            updateModelInfoLabel();
+
+            // Показываем уведомление об успешном удалении
+            showAlert("Объекты удалены", "Удалено " + selectedObjects.size() + " объект(ов).");
+        }
+    }
+
+    // Вспомогательный метод для показа уведомлений
+    private void showAlert(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
     }
 
     @FXML

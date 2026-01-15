@@ -13,6 +13,11 @@
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
+<?import javafx.scene.control.Button?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Spinner?>
+<?import javafx.scene.control.SpinnerValueFactory?>
+
 <AnchorPane fx:id="anchorPane" xmlns:fx="http://javafx.com/fxml"
             fx:controller="com.cgvsu.GuiController"
             styleClass="root-pane"
@@ -174,6 +179,99 @@
 
         <CheckBox fx:id="lightingCheckBox" text="Использовать освещение" styleClass="check-box"/>
 
+        <Button fx:id="deleteSelectedButton"
+                text="Удалить модель(и)"
+                onAction="#onDeleteSelectedButtonClick"
+                styleClass="button"
+                maxWidth="Infinity">
+            <padding>
+                <Insets top="10" right="15" bottom="10" left="15"/>
+            </padding>
+        </Button>
+
+        <VBox styleClass="parameter-panel" spacing="8">
+            <Label text="Перемещение:" styleClass="parameter-label"/>
+            <HBox spacing="5" alignment="CENTER_LEFT">
+                <Label text="X:" styleClass="unit-label"/>
+                <Spinner fx:id="translationXSpinner"
+                         styleClass="parameter-spinner"
+                         prefWidth="120">
+                </Spinner>
+                <Label text="ед." styleClass="unit-label"/>
+            </HBox>
+            <HBox spacing="5" alignment="CENTER_LEFT">
+                <Label text="Y:" styleClass="unit-label"/>
+                <Spinner fx:id="translationYSpinner"
+                         styleClass="parameter-spinner"
+                         prefWidth="120">
+                </Spinner>
+                <Label text="ед." styleClass="unit-label"/>
+            </HBox>
+            <HBox spacing="5" alignment="CENTER_LEFT">
+                <Label text="Z:" styleClass="unit-label"/>
+                <Spinner fx:id="translationZSpinner"
+                         styleClass="parameter-spinner"
+                         prefWidth="120">
+                </Spinner>
+                <Label text="ед." styleClass="unit-label"/>
+            </HBox>
+        </VBox>
+
+        <VBox styleClass="parameter-panel" spacing="8">
+            <Label text="Вращение:" styleClass="parameter-label"/>
+            <HBox spacing="5" alignment="CENTER_LEFT">
+                <Label text="X:" styleClass="unit-label"/>
+                <Spinner fx:id="rotationXSpinner"
+                         styleClass="parameter-spinner"
+                         prefWidth="120">
+                </Spinner>
+                <Label text="°" styleClass="unit-label"/>
+            </HBox>
+            <HBox spacing="5" alignment="CENTER_LEFT">
+                <Label text="Y:" styleClass="unit-label"/>
+                <Spinner fx:id="rotationYSpinner"
+                         styleClass="parameter-spinner"
+                         prefWidth="120">
+                </Spinner>
+                <Label text="°" styleClass="unit-label"/>
+            </HBox>
+            <HBox spacing="5" alignment="CENTER_LEFT">
+                <Label text="Z:" styleClass="unit-label"/>
+                <Spinner fx:id="rotationZSpinner"
+                         styleClass="parameter-spinner"
+                         prefWidth="120">
+                </Spinner>
+                <Label text="°" styleClass="unit-label"/>
+            </HBox>
+        </VBox>
+
+        <VBox styleClass="parameter-panel" spacing="8">
+            <Label text="Масштабирование:" styleClass="parameter-label"/>
+            <HBox spacing="5" alignment="CENTER_LEFT">
+                <Label text="X:" styleClass="unit-label"/>
+                <Spinner fx:id="scaleXSpinner"
+                         styleClass="parameter-spinner"
+                         prefWidth="120">
+                </Spinner>
+                <Label text="в %" styleClass="unit-label"/>
+            </HBox>
+            <HBox spacing="5" alignment="CENTER_LEFT">
+                <Label text="Y:" styleClass="unit-label"/>
+                <Spinner fx:id="scaleYSpinner"
+                         styleClass="parameter-spinner"
+                         prefWidth="120">
+                </Spinner>
+                <Label text="в %" styleClass="unit-label"/>
+            </HBox>
+            <HBox spacing="5" alignment="CENTER_LEFT">
+                <Label text="Z:" styleClass="unit-label"/>
+                <Spinner fx:id="scaleZSpinner"
+                         styleClass="parameter-spinner"
+                         prefWidth="120">
+                </Spinner>
+                <Label text="в %" styleClass="unit-label"/>
+            </HBox>
+        </VBox>
     </VBox>
 
     <HBox fx:id="bottomPanel"

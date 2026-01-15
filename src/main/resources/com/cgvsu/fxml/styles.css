@@ -202,7 +202,7 @@
     -fx-background-color: #a0a0a0;
 }
 
-/* ===== КНОПКИ (если добавятся) ===== */
+/* ===== КНОПКИ ===== */
 
 .button {
     -fx-background-color: #424242;
@@ -226,32 +226,73 @@
     -fx-border-color: #005a9e;
 }
 
-/* Основная кнопка (primary) */
-.button.primary {
-    -fx-background-color: #0078d4;
-    -fx-border-color: #0078d4;
+/* ===== СТИЛИ ДЛЯ ПАРАМЕТРОВ НА ПРАВОЙ ПАНЕЛИ ===== */
+
+/* Панель параметра */
+.parameter-panel {
+    -fx-background-color: #313131;
+    -fx-border-color: #555555;
+    -fx-border-width: 1;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-padding: 10;
 }
 
-.button.primary:hover {
+/* Метка параметра */
+.parameter-label {
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+}
+
+/* Метка единицы измерения */
+.unit-label {
+    -fx-font-size: 12px;
+    -fx-text-fill: #a0a0a0;
+}
+
+/* Spinner (текстовое поле со стрелками) */
+.parameter-spinner {
+    -fx-background-color: #424242;
+    -fx-border-color: #555555;
+    -fx-border-width: 1;
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
+}
+
+/* Текстовое поле внутри Spinner */
+.parameter-spinner .text-field {
+    -fx-background-color: transparent;
+    -fx-text-fill: white;
+    -fx-font-size: 14px;
+    -fx-padding: 5 8;
+}
+
+/* Кнопки стрелок Spinner */
+.parameter-spinner .increment-arrow-button,
+.parameter-spinner .decrement-arrow-button {
+    -fx-background-color: #424242;
+    -fx-border-color: transparent;
+    -fx-padding: 5 8;
+}
+
+.parameter-spinner .increment-arrow-button:hover,
+.parameter-spinner .decrement-arrow-button:hover {
+    -fx-background-color: #0078d4;
+}
+
+.parameter-spinner .increment-arrow-button:pressed,
+.parameter-spinner .decrement-arrow-button:pressed {
     -fx-background-color: #005a9e;
 }
 
-/* Опасная кнопка (danger) */
-.button.danger {
-    -fx-background-color: #dc3545;
-    -fx-border-color: #dc3545;
+/* Стрелки */
+.parameter-spinner .increment-arrow,
+.parameter-spinner .decrement-arrow {
+    -fx-background-color: #a0a0a0;
 }
 
-.button.danger:hover {
-    -fx-background-color: #c82333;
-}
-
-/* Успешная кнопка (success) */
-.button.success {
-    -fx-background-color: #28a745;
-    -fx-border-color: #28a745;
-}
-
-.button.success:hover {
-    -fx-background-color: #218838;
+.parameter-spinner .increment-arrow-button:hover .increment-arrow,
+.parameter-spinner .decrement-arrow-button:hover .decrement-arrow {
+    -fx-background-color: white;
 }
