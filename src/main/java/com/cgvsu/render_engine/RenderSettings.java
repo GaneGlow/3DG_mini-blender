@@ -10,4 +10,13 @@ public class RenderSettings {
 
     public Color baseColor = Color.GRAY;
     //public Image texture = null;
+
+    /*public RenderSettings copy() {
+        RenderSettings copy = new RenderSettings();
+        copy.drawWireframe = this.drawWireframe;
+        copy.useTexture = this.useTexture;
+        copy.useLighting = this.useLighting;
+        copy.baseColor = this.baseColor;
+        return copy;
+    }*/
 }

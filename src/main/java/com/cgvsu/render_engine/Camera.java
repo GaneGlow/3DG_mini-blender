@@ -51,11 +51,11 @@ public class Camera {
 
     public void setFov(float fov) { this.fov = fov; }
 
-    Matrix4 getViewMatrix() {
+    public Matrix4 getViewMatrix() {
         return GraphicConveyor.lookAt(position, target);
     }
 
-    Matrix4 getProjectionMatrix() {
+    public Matrix4 getProjectionMatrix() {
         return GraphicConveyor.perspective(fov, aspectRatio, nearPlane, farPlane);
     }
 

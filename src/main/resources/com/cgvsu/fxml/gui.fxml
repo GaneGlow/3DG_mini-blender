@@ -57,6 +57,28 @@
                     <KeyCodeCombination alt="UP" control="DOWN" meta="UP" shift="UP" shortcut="UP" code="T"/>
                 </accelerator>
             </MenuItem>
+            <MenuItem mnemonicParsing="false" onAction="#onExitMenuItemClick" text="Сохранить без изменений"
+                      styleClass="menu-item">
+                <!--вместо #onExitMenuItemClick надо написать название своего
+                      метода для сохранения модели без изменений-->
+                <accelerator>
+                    <KeyCodeCombination alt="UP" control="DOWN" meta="UP" shift="UP" shortcut="UP" code="S"/>
+                </accelerator>
+            </MenuItem>
+            <MenuItem mnemonicParsing="false" onAction="#onExitMenuItemClick" text="Сохранить с изменениями"
+                      styleClass="menu-item">
+                <!--вместо #onExitMenuItemClick надо написать название своего
+                      метода для сохранения модели с изменениями-->
+                <accelerator>
+                    <KeyCodeCombination alt="UP" control="DOWN" meta="UP" shift="DOWN" shortcut="UP" code="S"/>
+                </accelerator>
+            </MenuItem>
+            <MenuItem mnemonicParsing="false" onAction="#onExitMenuItemClick" text="Закрыть окно"
+                      styleClass="menu-item">
+                <accelerator>
+                    <KeyCodeCombination alt="UP" control="UP" meta="UP" shift="UP" shortcut="UP" code="ESCAPE"/>
+                </accelerator>
+            </MenuItem>
         </Menu>
 
         <!-- Menu "Камера" -->
@@ -104,10 +126,6 @@
             </MenuItem>
         </Menu>
     </MenuBar>
-
-
-
-
 
     <!-- Панель настроек -->
     <VBox styleClass="settings-panel"
