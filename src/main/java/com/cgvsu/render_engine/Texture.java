@@ -18,14 +18,13 @@ public class Texture {
     }
 
     public Color getColor(double u, double v) {
-
         u = u - Math.floor(u);
         v = v - Math.floor(v);
 
         v = 1.0 - v;
 
-        int x = (int) (u * (width - 1));
-        int y = (int) (v * (height - 1));
+        int x = (int) (u * width);
+        int y = (int) (v * height);
 
         x = Math.max(0, Math.min(width  - 1, x));
         y = Math.max(0, Math.min(height - 1, y));
