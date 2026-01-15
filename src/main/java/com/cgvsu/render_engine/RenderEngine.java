@@ -61,26 +61,6 @@ public class RenderEngine {
         }
     }
 
-    public static void render(
-            final GraphicsContext graphicsContext,
-            final Camera camera,
-            final Model mesh,
-            final Texture texture,
-            final RenderSettings settings,
-            final int width,
-            final int height) {
-
-        // Создаем временный список с одним объектом
-        List<SceneObject> singleObjectList = new ArrayList<>();
-        SceneObject singleObject = new SceneObject("SingleObject", mesh, texture);
-        singleObject.setWireframeColor(Color.WHITE);
-        singleObject.setModelColor(settings.baseColor);
-        singleObjectList.add(singleObject);
-
-        // Вызываем новую версию метода
-        render(graphicsContext, camera, singleObjectList, texture, settings, width, height);
-    }
-
     /**
      * Рендерит только треугольники (заполнение)
      */
