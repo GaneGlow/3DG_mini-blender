@@ -57,11 +57,12 @@ public class RenderEngine {
             final Matrix4 modelMatrix = getModelMatrix(sceneObject);
 
             // ПЕРВЫЙ ПРОХОД: Отрисовка треугольников с Z-буфером
-            renderTriangles(graphicsContext, camera, mesh, texture, objectSettings, baseColor, zBuffer, width, height);
+            renderTriangles(graphicsContext, scene.getActiveCamera(), mesh, objectTexture, objectSettings, baseColor,
+                    modelMatrix, zBuffer, width, height);
 
             // ВТОРОЙ ПРОХОД: Отрисовка полигональной сетки (если нужно)
             if (objectSettings.drawWireframe) {
-                renderWireframe(graphicsContext, camera, mesh, wireframeColor, zBuffer, width, height);
+                renderWireframe(graphicsContext, scene.getActiveCamera(), mesh, wireframeColor, modelMatrix, zBuffer, width, height);
             }
         }
     }
@@ -244,6 +245,7 @@ public class RenderEngine {
             final Camera camera,
             final Model mesh,
             final Color wireframeColor,
+            final Matrix4 modelMatrix,
             final ZBuffer zBuffer,
             final int width,
             final int height) {
