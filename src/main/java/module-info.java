@@ -7,4 +7,6 @@ module com.cgvsu {
 
     opens com.cgvsu to javafx.fxml;
     exports com.cgvsu;
+    exports com.cgvsu.gui;
+    opens com.cgvsu.gui to javafx.fxml;
 }
