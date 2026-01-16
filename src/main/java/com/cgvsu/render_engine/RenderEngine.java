@@ -3,6 +3,7 @@ package com.cgvsu.render_engine;
 import com.cgvsu.math.*;
 import com.cgvsu.model.Model;
 import com.cgvsu.model.Polygon;
+import com.cgvsu.model.PolygonSelection;
 import com.cgvsu.rasterization.Rasterization;
 import com.cgvsu.rasterization.ZBuffer;
 import com.cgvsu.render_engine.scene.Scene;
@@ -11,7 +12,9 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.PixelWriter;
 import javafx.scene.paint.Color;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import static com.cgvsu.rasterization.Rasterization.drawLineWithZBuffer;
@@ -24,7 +27,8 @@ public class RenderEngine {
             final Texture texture,
             final RenderSettings globalSettings,
             final int width,
-            final int height) {
+            final int height,
+            final List<PolygonSelection> selectedPolygons) {
 
         // Очистка экрана
         graphicsContext.clearRect(0, 0, width, height);
@@ -64,7 +68,94 @@ public class RenderEngine {
             if (objectSettings.drawWireframe) {
                 renderWireframe(graphicsContext, scene.getActiveCamera(), mesh, wireframeColor, modelMatrix, zBuffer, width, height);
             }
+
+            // ТРЕТИЙ ПРОХОД: Отрисовка выделенных полигонов
+            if (selectedPolygons != null && !selectedPolygons.isEmpty()) {
+                renderSelectedPolygons(graphicsContext, scene, selectedPolygons, width, height);
+            }
         }
+    }
+
+    private static void renderSelectedPolygons(
+            final GraphicsContext graphicsContext,
+            final Scene scene,
+            final List<PolygonSelection> selectedPolygons,
+            final int width,
+            final int height) {
+
+        for (PolygonSelection selection : selectedPolygons) {
+            SceneObject object = selection.getSceneObject();
+            Polygon polygon = selection.getPolygon();
+
+            if (!object.isVisible() || object.getModel() == null) {
+                continue;
+            }
+
+            Model mesh = object.getModel();
+
+            // Получаем вершины выделенного полигона
+            List<Integer> vertexIndices = polygon.getVertexIndices();
+            if (vertexIndices.size() < 3) continue;
+
+            // Модельная матрица
+            final Matrix4 modelMatrix = getModelMatrix(object);
+            final Camera camera = scene.getActiveCamera();
+            final Matrix4 viewMatrix = camera.getViewMatrix();
+            final Matrix4 projectionMatrix = camera.getProjectionMatrix();
+            final Matrix4 modelViewProjectionMatrix = projectionMatrix.multiply(viewMatrix).multiply(modelMatrix);
+
+            // Собираем экранные координаты вершин
+            List<Vector3> screenVertices = new ArrayList<>();
+            for (int vertexIndex : vertexIndices) {
+                Vector3 vertex = mesh.vertices.get(vertexIndex);
+                Vector3 screenPos = transformVertex(vertex, modelViewProjectionMatrix, width, height);
+                screenVertices.add(screenPos);
+            }
+
+            // Рисуем заполнение полигона красным цветом с прозрачностью
+            fillPolygon(graphicsContext, screenVertices, Color.rgb(255, 0, 0, 0.3));
+
+            // Рисуем контур полигона красным цветом
+            drawPolygonOutline(graphicsContext, screenVertices, Color.RED);
+        }
+    }
+
+    private static void fillPolygon(GraphicsContext gc, List<Vector3> vertices, Color color) {
+        if (vertices.size() < 3) return;
+
+        gc.setFill(color);
+        gc.beginPath();
+
+        Vector3 first = vertices.get(0);
+        gc.moveTo(first.x, first.y);
+
+        for (int i = 1; i < vertices.size(); i++) {
+            Vector3 v = vertices.get(i);
+            gc.lineTo(v.x, v.y);
+        }
+
+        gc.closePath();
+        gc.fill();
+    }
+
+    private static void drawPolygonOutline(GraphicsContext gc, List<Vector3> vertices, Color color) {
+        if (vertices.size() < 2) return;
+
+        gc.setStroke(color);
+        gc.setLineWidth(2);
+        gc.beginPath();
+
+        Vector3 first = vertices.get(0);
+        gc.moveTo(first.x, first.y);
+
+        for (int i = 1; i < vertices.size(); i++) {
+            Vector3 v = vertices.get(i);
+            gc.lineTo(v.x, v.y);
+        }
+
+        // Замыкаем полигон
+        gc.lineTo(first.x, first.y);
+        gc.stroke();
     }
 
     /**
