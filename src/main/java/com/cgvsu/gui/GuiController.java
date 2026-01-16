@@ -177,9 +177,6 @@ public class GuiController {
             }
         });
 
-        // УДАЛИТЕ дублирующийся обработчик mouseClicked
-        // canvas.setOnMouseClicked(event -> { ... }); <-- этот нужно удалить
-
         canvas.setOnMouseMoved(event -> {
             mouseX = (int) event.getX();
             mouseY = (int) event.getY();
