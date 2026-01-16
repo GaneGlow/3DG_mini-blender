@@ -111,6 +111,11 @@ public class GuiController {
     private int mouseX = 0;
     private int mouseY = 0;
 
+    private double lastMouseX;
+    private double lastMouseY;
+    private boolean isLeftMousePressed = false;
+    private boolean isRightMousePressed = false;
+
     /**
      * Флаг, чтобы программное обновление спиннеров (например, при выборе объекта)
      * не вызывало применение трансформаций через слушатели.
@@ -142,7 +147,7 @@ public class GuiController {
 
         // Обработка клика для выделения
         canvas.setOnMouseClicked(event -> {
-            if (event.getButton() == MouseButton.SECONDARY) {
+            if (event.getButton() == MouseButton.PRIMARY) {
                 handleObjectSelection((int) event.getX(), (int) event.getY());
                 updateModelInfoLabel();
             }
@@ -160,6 +165,89 @@ public class GuiController {
             }
         });
 
+        // Обработка нажатия левой кнопки мыши
+        canvas.setOnMousePressed(event -> {
+            if (event.getButton() == MouseButton.PRIMARY) {
+                isLeftMousePressed = true;
+                lastMouseX = event.getX();
+                lastMouseY = event.getY();
+            }
+        });
+
+        canvas.setOnMouseReleased(event -> {
+            if (event.getButton() == MouseButton.PRIMARY) {
+                isLeftMousePressed = false;
+            }
+            if (event.getButton() == MouseButton.SECONDARY) {
+                isRightMousePressed = false;
+            }
+        });
+
+        // Обработка движения мыши с зажатой кнопкой
+        canvas.setOnMouseDragged(event -> {
+            if (!selectedObjects.isEmpty()) {
+                double deltaX = event.getX() - lastMouseX;
+                double deltaY = event.getY() - lastMouseY;
+
+                // При зажатой ПКМ - вращение
+                if (event.getButton() == MouseButton.SECONDARY) {
+                    float rotationSpeed = 0.01f;
+                    float rotY = (float) (deltaX * rotationSpeed);
+                    float rotX = (float) (deltaY * rotationSpeed);
+
+                    for (SceneObject obj : selectedObjects) {
+                        Transform t = ensureTransform(obj);
+                        if (t != null) {
+                            t.rotate(rotX, rotY, 0);
+                        }
+                    }
+                }
+                // При зажатой ЛКМ - перемещение
+                else if (event.getButton() == MouseButton.PRIMARY) {
+                    float moveSpeed = 0.1f;
+                    float moveX = (float) (-deltaX * moveSpeed);
+                    float moveY = (float) (-deltaY * moveSpeed);
+
+                    for (SceneObject obj : selectedObjects) {
+                        Transform t = ensureTransform(obj);
+                        if (t != null) {
+                            t.translate(moveX, moveY, 0);
+                        }
+                    }
+                }
+
+                lastMouseX = event.getX();
+                lastMouseY = event.getY();
+
+                // Обновляем UI
+                updateTransformSpinnersFromSelection();
+            }
+        });
+
+        // Обработка колесика мыши для масштабирования
+        canvas.setOnScroll(event -> {
+            if (!selectedObjects.isEmpty()) {
+                double deltaY = event.getDeltaY();
+                float scaleSpeed = 0.01f;
+                float scaleFactor = 1.0f + (float) (-deltaY * scaleSpeed); // Инвертируем для интуитивного масштабирования
+
+                // Ограничиваем масштаб, чтобы не было слишком маленьких/больших значений
+                scaleFactor = Math.max(0.1f, Math.min(scaleFactor, 10.0f));
+
+                for (SceneObject obj : selectedObjects) {
+                    Transform t = ensureTransform(obj);
+                    if (t != null) {
+                        t.scale(scaleFactor);
+                    }
+                }
+
+                // Обновляем UI
+                updateTransformSpinnersFromSelection();
+                event.consume();
+            }
+        });
+
+
         setupSpinner(translationXSpinner, 0.0, "X", -1000.0, 1000.0);
 
         setupSpinner(translationYSpinner, 0.0, "Y", -1000.0, 1000.0);
@@ -172,12 +260,11 @@ public class GuiController {
 
         setupSpinner(rotationZSpinner, 0.0, "Z", -1000.0, 1000.0);
 
-        // Масштаб по умолчанию = 1 (а не 0), иначе модель "схлопнется".
-        setupSpinner(scaleXSpinner, 1.0, "X", -1000.0, 1000.0);
+        setupSpinner(scaleXSpinner, 0.0, "X", -1000.0, 1000.0);
 
-        setupSpinner(scaleYSpinner, 1.0, "Y", -1000.0, 1000.0);
+        setupSpinner(scaleYSpinner, 0.0, "Y", -1000.0, 1000.0);
 
-        setupSpinner(scaleZSpinner, 1.0, "Z", -1000.0, 1000.0);
+        setupSpinner(scaleZSpinner, 0.0, "Z", -1000.0, 1000.0);
 
         // Подключаем аффинные преобразования (Translation/Rotation/Scale) к UI.
         bindTransformSpinners();
@@ -192,17 +279,6 @@ public class GuiController {
             canvas.getGraphicsContext2D().clearRect(0, 0, width, height);
             camera.setAspectRatio((float) (width / height));
 
-            /*if (mesh != null) {
-                RenderEngine.render(
-                        canvas.getGraphicsContext2D(),
-                        camera,
-                        mesh,
-                        currentTexture,
-                        renderSettings,
-                        (int) width,
-                        (int) height
-                );
-            }*/
             renderFrame();
         });
 
@@ -236,7 +312,7 @@ public class GuiController {
 
         // Создаем новую фабрику значений с правильными параметрами
         SpinnerValueFactory<Double> valueFactory =
-                new SpinnerValueFactory.DoubleSpinnerValueFactory(min, max, initialValue, 0.1);
+                new SpinnerValueFactory.DoubleSpinnerValueFactory(min, max, initialValue, 1.0);
         spinner.setValueFactory(valueFactory);
 
         // Настраиваем форматирование отображения (2 знака после запятой)
@@ -343,6 +419,7 @@ public class GuiController {
             final double oldValue,
             final double newValue
     ) {
+        // Применяем изменения к выбранным объектам
         switch (kind) {
             case TRANSLATION: {
                 final float d = (float) (newValue - oldValue);
@@ -390,14 +467,11 @@ public class GuiController {
                 break;
             }
             case SCALE: {
-                // Старайтесь работать как с "коэффициентом" масштаба.
-                // Для корректной групповой операции применяем множитель = new/old.
+                // Масштабирование уже работает, оставляем как есть
                 final double EPS = 1e-9;
                 final boolean oldIsZero = Math.abs(oldValue) < EPS;
 
                 if (oldIsZero) {
-                    // Если старое значение 0, делить нельзя. В этом случае считаем,
-                    // что пользователь задаёт абсолютное значение компоненты масштаба.
                     final float absolute = (float) newValue;
                     for (SceneObject obj : selectedObjects) {
                         Transform t = ensureTransform(obj);
@@ -418,6 +492,13 @@ public class GuiController {
                 }
                 break;
             }
+        }
+        // Разрешаем обновление UI на время
+        updatingTransformUI = true;
+        try {
+            updateTransformSpinnersFromSelection();
+        } finally {
+            updatingTransformUI = false;
         }
     }
 
@@ -516,28 +597,6 @@ public class GuiController {
             return;
         }
         spinner.getValueFactory().setValue(value);
-    }
-
-    /**
-     * Локальная копия логики построения modelMatrix (как в RenderEngine),
-     * чтобы можно было корректно вычислять попадание курсора по объекту.
-     */
-    private Matrix4 getModelMatrix(final SceneObject sceneObject) {
-        if (sceneObject == null || sceneObject.getTransform() == null) {
-            return GraphicConveyor.createModelMatrix(
-                    new Vector3(0, 0, 0),
-                    new Vector3(0, 0, 0),
-                    new Vector3(1, 1, 1)
-            );
-        }
-
-        final Transform t = sceneObject.getTransform();
-
-        final Vector3 translation = (t.getTranslation() != null) ? t.getTranslation() : new Vector3(0, 0, 0);
-        final Vector3 rotation = (t.getRotation() != null) ? t.getRotation() : new Vector3(0, 0, 0);
-        final Vector3 scale = (t.getScale() != null) ? t.getScale() : new Vector3(1, 1, 1);
-
-        return GraphicConveyor.createModelMatrix(translation, rotation, scale);
     }
 
     // Метод для применения параметра к выбранным объектам
@@ -704,7 +763,7 @@ public class GuiController {
         Camera camera = this.camera; // Используем текущую камеру
 
         // Матрицы преобразования (как в RenderEngine): v_clip = P * V * M * v
-        Matrix4 modelMatrix = getModelMatrix(obj);
+        Matrix4 modelMatrix = RenderEngine.getModelMatrix(obj);
         Matrix4 viewMatrix = camera.getViewMatrix();
         Matrix4 projectionMatrix = camera.getProjectionMatrix();
         Matrix4 modelViewProjectionMatrix = projectionMatrix.multiply(viewMatrix).multiply(modelMatrix);
@@ -716,7 +775,7 @@ public class GuiController {
 
         // Проходим по всем вершинам и находим границы
         for (Vector3 vertex : mesh.vertices) {
-            Vector3 screenPos = transformVertex(vertex, modelViewProjectionMatrix,
+            Vector3 screenPos = RenderEngine.transformVertex(vertex, modelViewProjectionMatrix,
                     (int) canvas.getWidth(), (int) canvas.getHeight());
 
             // multiplyMatrix4ByVector3 может вернуть NaN, если w ~ 0
@@ -738,17 +797,6 @@ public class GuiController {
         // Проверяем, попадает ли точка в bounding box
         return mouseX >= minX && mouseX <= maxX &&
                 mouseY >= minY && mouseY <= maxY;
-    }
-
-    // Добавьте этот метод в GuiController:
-    private Vector3 transformVertex(Vector3 vertex, Matrix4 modelViewProjectionMatrix, int width, int height) {
-        // Аналогично методу в RenderEngine
-        Vector3 transformed = GraphicConveyor.multiplyMatrix4ByVector3(modelViewProjectionMatrix, vertex);
-
-        float screenX = (transformed.x + 1.0f) * width / 2.0f;
-        float screenY = (1.0f - transformed.y) * height / 2.0f;
-
-        return new Vector3(screenX, screenY, transformed.z);
     }
 
     // Обновление цветов объектов в зависимости от выбора

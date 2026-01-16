@@ -74,7 +74,7 @@ public class RenderEngine {
      * Важно: GraphicConveyor работает с векторами-столбцами, поэтому используем
      * M = T * R * S и далее в пайплайне P * V * M.
      */
-    private static Matrix4 getModelMatrix(final SceneObject sceneObject) {
+    public static Matrix4 getModelMatrix(final SceneObject sceneObject) {
         if (sceneObject == null || sceneObject.getTransform() == null) {
             return GraphicConveyor.createModelMatrix(
                     new Vector3(0, 0, 0),
@@ -313,8 +313,8 @@ public class RenderEngine {
     /**
      * Преобразует вершину из мировых в экранные координаты
      */
-    private static Vector3 transformVertex(Vector3 vertex, Matrix4 modelViewProjectionMatrix,
-                                           int width, int height) {
+    public static Vector3 transformVertex(Vector3 vertex, Matrix4 modelViewProjectionMatrix,
+                                          int width, int height) {
         // Применяем матрицу преобразования
         Vector3 transformed = GraphicConveyor.multiplyMatrix4ByVector3(
                 modelViewProjectionMatrix, vertex
