@@ -123,6 +123,8 @@ public class RenderEngine {
         // Матрица вида-модели для нормалей
         final Matrix4 modelViewMatrix = viewMatrix.multiply(modelMatrix);
 
+        final PixelWriter pixelWriter = graphicsContext.getPixelWriter();
+
         // Проходим по всем полигонам (треугольникам)
         for (Polygon polygon : mesh.polygons) {
             if (polygon.getVertexIndices().size() != 3) {
@@ -139,67 +141,20 @@ public class RenderEngine {
             Vector3 v2 = mesh.vertices.get(vIdx2);
             Vector3 v3 = mesh.vertices.get(vIdx3);
 
-            // Преобразуем вершины в экранные координаты
-            Vector3 projV1 = transformVertex(v1, modelViewProjectionMatrix, width, height);
-            Vector3 projV2 = transformVertex(v2, modelViewProjectionMatrix, width, height);
-            Vector3 projV3 = transformVertex(v3, modelViewProjectionMatrix, width, height);
-
-            // Проверяем видимость треугольника (back-face culling)
-            if (!isTriangleVisible(projV1, projV2, projV3)) {
-                continue;
-            }
-
-            // --- ОТРИСОВКА ЗАПОЛНЕНИЯ ---
-            if (settings.useTexture && texture != null &&
-                    polygon.getTextureVertexIndices().size() == 3) {
-
-                // ТЕКСТУРИРОВАННЫЙ ТРЕУГОЛЬНИК
+            // Достаём UV (если есть)
+            Vector2 tex1 = null, tex2 = null, tex3 = null;
+            if (settings.useTexture && texture != null && polygon.getTextureVertexIndices().size() == 3) {
                 int tIdx1 = polygon.getTextureVertexIndices().get(0);
                 int tIdx2 = polygon.getTextureVertexIndices().get(1);
                 int tIdx3 = polygon.getTextureVertexIndices().get(2);
-
-                Vector2 tex1 = mesh.textureVertices.get(tIdx1);
-                Vector2 tex2 = mesh.textureVertices.get(tIdx2);
-                Vector2 tex3 = mesh.textureVertices.get(tIdx3);
-
-                if (settings.useLighting && polygon.getNormalIndices().size() == 3) {
-                    // Текстура + освещение
-                    int nIdx1 = polygon.getNormalIndices().get(0);
-                    int nIdx2 = polygon.getNormalIndices().get(1);
-                    int nIdx3 = polygon.getNormalIndices().get(2);
-
-                    Vector3 n1 = mesh.normals.get(nIdx1);
-                    Vector3 n2 = mesh.normals.get(nIdx2);
-                    Vector3 n3 = mesh.normals.get(nIdx3);
-
-                    // Преобразуем нормали
-                    Matrix3 normalMatrix = calculateNormalMatrix(modelViewMatrix);
-                    Vector3 transformedN1 = transformNormal(n1, normalMatrix);
-                    Vector3 transformedN2 = transformNormal(n2, normalMatrix);
-                    Vector3 transformedN3 = transformNormal(n3, normalMatrix);
-
-                    drawTexturedTriangleWithLighting(
-                            graphicsContext.getPixelWriter(),
-                            zBuffer,
-                            projV1, projV2, projV3,
-                            tex1, tex2, tex3,
-                            transformedN1, transformedN2, transformedN3,
-                            texture, light
-                    );
-                } else {
-                    // Только текстура
-                    Rasterization.fillTriangleTextured(
-                            graphicsContext.getPixelWriter(),
-                            zBuffer,
-                            projV1.x, projV1.y, projV1.z, tex1.x, tex1.y,
-                            projV2.x, projV2.y, projV2.z, tex2.x, tex2.y,
-                            projV3.x, projV3.y, projV3.z, tex3.x, tex3.y,
-                            texture
-                    );
-                }
+                tex1 = mesh.textureVertices.get(tIdx1);
+                tex2 = mesh.textureVertices.get(tIdx2);
+                tex3 = mesh.textureVertices.get(tIdx3);
             }
-            else if (settings.useLighting && polygon.getNormalIndices().size() == 3) {
-                // ОСВЕЩЕННЫЙ ТРЕУГОЛЬНИК (без текстуры) с интерполяцией нормалей
+
+            // Достаём и преобразуем нормали (если есть)
+            Vector3 transformedN1 = null, transformedN2 = null, transformedN3 = null;
+            if (settings.useLighting && polygon.getNormalIndices().size() == 3) {
                 int nIdx1 = polygon.getNormalIndices().get(0);
                 int nIdx2 = polygon.getNormalIndices().get(1);
                 int nIdx3 = polygon.getNormalIndices().get(2);
@@ -208,30 +163,66 @@ public class RenderEngine {
                 Vector3 n2 = mesh.normals.get(nIdx2);
                 Vector3 n3 = mesh.normals.get(nIdx3);
 
-                // Преобразуем нормали
                 Matrix3 normalMatrix = calculateNormalMatrix(modelViewMatrix);
-                Vector3 transformedN1 = transformNormal(n1, normalMatrix);
-                Vector3 transformedN2 = transformNormal(n2, normalMatrix);
-                Vector3 transformedN3 = transformNormal(n3, normalMatrix);
+                transformedN1 = transformNormal(n1, normalMatrix);
+                transformedN2 = transformNormal(n2, normalMatrix);
+                transformedN3 = transformNormal(n3, normalMatrix);
+            }
 
-                // Рисуем треугольник с интерполяцией нормалей
-                drawLitTriangleWithNormalInterpolation(
-                        graphicsContext,
+            // Проекция (screen + invW + zOverW + attrs)
+            ProjectedVertex pv1 = projectVertex(v1, tex1, transformedN1, modelViewProjectionMatrix, width, height);
+            ProjectedVertex pv2 = projectVertex(v2, tex2, transformedN2, modelViewProjectionMatrix, width, height);
+            ProjectedVertex pv3 = projectVertex(v3, tex3, transformedN3, modelViewProjectionMatrix, width, height);
+
+            // Отбрасываем треугольники с вершинами "на/за" камерой (без клиппинга)
+            if (pv1 == null || pv2 == null || pv3 == null) {
+                continue;
+            }
+
+            // Проверяем видимость треугольника (back-face culling) по экранным координатам
+            if (!isTriangleVisible(pv1, pv2, pv3)) {
+                continue;
+            }
+
+            // --- ОТРИСОВКА ЗАПОЛНЕНИЯ ---
+            if (settings.useTexture && texture != null && tex1 != null && tex2 != null && tex3 != null) {
+                if (settings.useLighting && transformedN1 != null) {
+                    // Текстура + освещение (perspective correct)
+                    drawTexturedTriangleWithLightingPerspectiveCorrect(
+                            pixelWriter,
+                            zBuffer,
+                            pv1, pv2, pv3,
+                            texture,
+                            light
+                    );
+                } else {
+                    // Только текстура (perspective correct)
+                    Rasterization.fillTriangleTexturedPerspectiveCorrect(
+                            pixelWriter,
+                            zBuffer,
+                            pv1.x, pv1.y, pv1.invW, pv1.zOverW, pv1.uOverW, pv1.vOverW,
+                            pv2.x, pv2.y, pv2.invW, pv2.zOverW, pv2.uOverW, pv2.vOverW,
+                            pv3.x, pv3.y, pv3.invW, pv3.zOverW, pv3.uOverW, pv3.vOverW,
+                            texture
+                    );
+                }
+            } else if (settings.useLighting && transformedN1 != null) {
+                // Освещение без текстуры (perspective correct depth + normals)
+                drawLitTriangleWithNormalInterpolationPerspectiveCorrect(
+                        pixelWriter,
                         zBuffer,
-                        projV1, projV2, projV3,
-                        transformedN1, transformedN2, transformedN3,
+                        pv1, pv2, pv3,
                         baseColor,
                         light
                 );
-            }
-            else {
-                // ПРОСТОЙ ТРЕУГОЛЬНИК (без текстуры и освещения)
-                Rasterization.fillTriangle(
-                        graphicsContext,
+            } else {
+                // Простой треугольник (perspective correct depth)
+                Rasterization.fillTrianglePerspectiveCorrect(
+                        pixelWriter,
                         zBuffer,
-                        projV1.x, projV1.y, projV1.z,
-                        projV2.x, projV2.y, projV2.z,
-                        projV3.x, projV3.y, projV3.z,
+                        pv1.x, pv1.y, pv1.invW, pv1.zOverW,
+                        pv2.x, pv2.y, pv2.invW, pv2.zOverW,
+                        pv3.x, pv3.y, pv3.invW, pv3.zOverW,
                         baseColor
                 );
             }
@@ -310,20 +301,62 @@ public class RenderEngine {
     /**
      * Преобразует вершину из мировых в экранные координаты
      */
-    public static Vector3 transformVertex(Vector3 vertex, Matrix4 modelViewProjectionMatrix,
-                                          int width, int height) {
-        // Применяем матрицу преобразования
-        Vector3 transformed = GraphicConveyor.multiplyMatrix4ByVector3(
-                modelViewProjectionMatrix, vertex
-        );
+    // RenderEngine.java
+    public static ProjectedVertex projectVertex(
+            Vector3 vertex,
+            Vector2 texCoord,        // может быть null
+            Vector3 normal,          // может быть null
+            Matrix4 mvp,
+            int width, int height
+    ) {
+        Vector4 clip = GraphicConveyor.multiplyMatrix4ByVector4(mvp, vertex);
 
-        // Преобразуем в экранные координаты
-        float screenX = (transformed.x + 1.0f) * width / 2.0f;
-        float screenY = (1.0f - transformed.y) * height / 2.0f;
-        float screenZ = transformed.z;
+        // ВАЖНО: отбрасываем точки "на/за камерой" (w <= 0 в вашей матрице перспективы: w' = z)
+        if (!Float.isFinite(clip.w) || clip.w <= 1e-7f) {
+            return null;
+        }
 
-        return new Vector3(screenX, screenY, screenZ);
+        double invW = 1.0 / clip.w;
+
+        double ndcX = clip.x * invW;
+        double ndcY = clip.y * invW;
+        double zOverW = clip.z * invW; // ndcZ
+
+        float screenX = (float)((ndcX + 1.0) * width * 0.5);
+        float screenY = (float)((1.0 - ndcY) * height * 0.5);
+
+        double uOverW = 0.0, vOverW = 0.0;
+        if (texCoord != null) {
+            uOverW = texCoord.x * invW;
+            vOverW = texCoord.y * invW;
+        }
+
+        double nxOverW = 0.0, nyOverW = 0.0, nzOverW = 0.0;
+        if (normal != null) {
+            nxOverW = normal.x * invW;
+            nyOverW = normal.y * invW;
+            nzOverW = normal.z * invW;
+        }
+
+        return new ProjectedVertex(screenX, screenY, invW, zOverW, uOverW, vOverW, nxOverW, nyOverW, nzOverW);
     }
+
+    /**
+     * Упрощённая проекция вершины в экранные координаты (для wireframe/линий).
+     * Возвращает (x_screen, y_screen, z_ndc).
+     *
+     * ВАЖНО: это не перспективно-корректная интерполяция атрибутов; используется
+     * только для линий/отсечения/сборки рёбер.
+     */
+    public static Vector3 transformVertex(final Vector3 vertex, final Matrix4 mvp, final int width, final int height) {
+        Vector3 ndc = GraphicConveyor.multiplyMatrix4ByVector3(mvp, vertex);
+        if (!Float.isFinite(ndc.x) || !Float.isFinite(ndc.y) || !Float.isFinite(ndc.z)) {
+            return new Vector3(Float.NaN, Float.NaN, Float.NaN);
+        }
+        Point2 p = GraphicConveyor.vertexToPoint(ndc, width, height);
+        return new Vector3(p.x, p.y, ndc.z);
+    }
+
 
     /**
      * Вычисляет матрицу для преобразования нормалей
@@ -352,6 +385,21 @@ public class RenderEngine {
     /**
      * Проверяет, виден ли треугольник (back-face culling)
      */
+    private static boolean isTriangleVisible(ProjectedVertex v1, ProjectedVertex v2, ProjectedVertex v3) {
+        // Векторы сторон треугольника в экранных координатах
+        float e1x = v2.x - v1.x;
+        float e1y = v2.y - v1.y;
+        float e2x = v3.x - v1.x;
+        float e2y = v3.y - v1.y;
+
+        // Знак псевдоскалярного произведения (2D cross) определяет ориентацию
+        float cross = e1x * e2y - e1y * e2x;
+
+        // Для вашей системы координат (y вниз), условие может быть инвертировано.
+        // Здесь оставляем тот же смысл, что и раньше: "невидимые" отсекаем.
+        return cross <= 0;
+    }
+
     private static boolean isTriangleVisible(Vector3 v1, Vector3 v2, Vector3 v3) {
         // Векторы сторон треугольника
         Vector3 edge1 = v2.subtract(v1);
@@ -367,74 +415,137 @@ public class RenderEngine {
     /**
      * Рисует текстурированный треугольник с освещением
      */
-    private static void drawTexturedTriangleWithLighting(
+    // RenderEngine.java (или Rasterization — как удобнее, но у вас сейчас в RenderEngine)
+    private static void drawTexturedTriangleWithLightingPerspectiveCorrect(
             PixelWriter pixelWriter,
             ZBuffer zBuffer,
-            Vector3 v1, Vector3 v2, Vector3 v3,
-            Vector2 tex1, Vector2 tex2, Vector2 tex3,
-            Vector3 n1, Vector3 n2, Vector3 n3,
+            ProjectedVertex v1, ProjectedVertex v2, ProjectedVertex v3,
             Texture texture,
-            Lighting.Light light) {
+            Lighting.Light light
+    ) {
+        if (texture == null || !texture.isValid()) return;
 
-        // Определяем ограничивающий прямоугольник
         int minX = (int) Math.max(0, Math.floor(Math.min(v1.x, Math.min(v2.x, v3.x))));
-        int maxX = (int) Math.min(zBuffer.getWidth() - 1,
-                Math.ceil(Math.max(v1.x, Math.max(v2.x, v3.x))));
+        int maxX = (int) Math.min(zBuffer.getWidth() - 1, Math.ceil(Math.max(v1.x, Math.max(v2.x, v3.x))));
         int minY = (int) Math.max(0, Math.floor(Math.min(v1.y, Math.min(v2.y, v3.y))));
-        int maxY = (int) Math.min(zBuffer.getHeight() - 1,
-                Math.ceil(Math.max(v1.y, Math.max(v2.y, v3.y))));
+        int maxY = (int) Math.min(zBuffer.getHeight() - 1, Math.ceil(Math.max(v1.y, Math.max(v2.y, v3.y))));
 
-        // Вычисляем константы для барицентрических координат
         double det = (v1.x - v3.x) * (v2.y - v3.y) - (v2.x - v3.x) * (v1.y - v3.y);
-
-        if (Math.abs(det) < 1e-10) {
-            return; // Вырожденный треугольник
-        }
-
+        if (Math.abs(det) < 1e-10) return;
         double invDet = 1.0 / det;
 
-        // Проходим по всем пикселям в ограничивающем прямоугольнике
         for (int y = minY; y <= maxY; y++) {
             for (int x = minX; x <= maxX; x++) {
 
-                // Вычисляем барицентрические координаты
-                double lambda1 = ((x - v3.x) * (v2.y - v3.y) -
-                        (v2.x - v3.x) * (y - v3.y)) * invDet;
-                double lambda2 = ((v1.x - v3.x) * (y - v3.y) -
-                        (x - v3.x) * (v1.y - v3.y)) * invDet;
-                double lambda3 = 1 - lambda1 - lambda2;
+                double l1 = ((x - v3.x) * (v2.y - v3.y) - (v2.x - v3.x) * (y - v3.y)) * invDet;
+                double l2 = ((v1.x - v3.x) * (y - v3.y) - (x - v3.x) * (v1.y - v3.y)) * invDet;
+                double l3 = 1 - l1 - l2;
 
-                // Проверяем, находится ли точка внутри треугольника
-                if (lambda1 >= 0 && lambda2 >= 0 && lambda3 >= 0) {
+                if (l1 >= 0 && l2 >= 0 && l3 >= 0) {
 
-                    // Интерполируем глубину
-                    double z = lambda1 * v1.z + lambda2 * v2.z + lambda3 * v3.z;
+                    double invW = l1 * v1.invW + l2 * v2.invW + l3 * v3.invW;
+                    if (invW <= 1e-12 || !Double.isFinite(invW)) continue;
 
-                    // Проверяем Z-буфер
+                    double z = (l1 * v1.zOverW + l2 * v2.zOverW + l3 * v3.zOverW) / invW;
+
                     if (z < zBuffer.get(x, y)) {
+                        double u = (l1 * v1.uOverW + l2 * v2.uOverW + l3 * v3.uOverW) / invW;
+                        double v = (l1 * v1.vOverW + l2 * v2.vOverW + l3 * v3.vOverW) / invW;
 
-                        // Интерполируем текстурные координаты
-                        double u = lambda1 * tex1.x + lambda2 * tex2.x + lambda3 * tex3.x;
-                        double vCoord = lambda1 * tex1.y + lambda2 * tex2.y + lambda3 * tex3.y;
+                        Color texColor = texture.getColor(u, v);
 
-                        // Получаем цвет текстуры
-                        Color texColor = texture.getColor(u, vCoord);
+                        // Нормаль перспективно-корректно:
+                        double nx = (l1 * v1.nxOverW + l2 * v2.nxOverW + l3 * v3.nxOverW) / invW;
+                        double ny = (l1 * v1.nyOverW + l2 * v2.nyOverW + l3 * v3.nyOverW) / invW;
+                        double nz = (l1 * v1.nzOverW + l2 * v2.nzOverW + l3 * v3.nzOverW) / invW;
 
-                        // Интерполируем нормаль
-                        Vector3 normal = Lighting.interpolateNormal(
-                                n1, n2, n3,
-                                (float)lambda1, (float)lambda2, (float)lambda3
-                        );
+                        Vector3 normal = new Vector3((float)nx, (float)ny, (float)nz).normalized();
 
-                        // Применяем освещение
                         Color finalColor = Lighting.applySmoothLighting(texColor, normal, light);
 
-                        // Рисуем пиксель
                         pixelWriter.setColor(x, y, finalColor);
                         zBuffer.set(x, y, z);
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * Освещённый треугольник без текстуры:
+     *  - персп.-корректная глубина (z)
+     *  - персп.-корректная интерполяция нормали (через nOverW и invW)
+     */
+    private static void drawLitTriangleWithNormalInterpolationPerspectiveCorrect(
+            PixelWriter pixelWriter,
+            ZBuffer zBuffer,
+            ProjectedVertex v1, ProjectedVertex v2, ProjectedVertex v3,
+            Color baseColor,
+            Lighting.Light light
+    ) {
+        int minX = (int) Math.max(0, Math.floor(Math.min(v1.x, Math.min(v2.x, v3.x))));
+        int maxX = (int) Math.min(zBuffer.getWidth() - 1, Math.ceil(Math.max(v1.x, Math.max(v2.x, v3.x))));
+        int minY = (int) Math.max(0, Math.floor(Math.min(v1.y, Math.min(v2.y, v3.y))));
+        int maxY = (int) Math.min(zBuffer.getHeight() - 1, Math.ceil(Math.max(v1.y, Math.max(v2.y, v3.y))));
+
+        double det = (v1.x - v3.x) * (v2.y - v3.y) - (v2.x - v3.x) * (v1.y - v3.y);
+        if (Math.abs(det) < 1e-10) return;
+        double invDet = 1.0 / det;
+
+        for (int y = minY; y <= maxY; y++) {
+            for (int x = minX; x <= maxX; x++) {
+
+                double l1 = ((x - v3.x) * (v2.y - v3.y) - (v2.x - v3.x) * (y - v3.y)) * invDet;
+                double l2 = ((v1.x - v3.x) * (y - v3.y) - (x - v3.x) * (v1.y - v3.y)) * invDet;
+                double l3 = 1 - l1 - l2;
+
+                if (l1 >= 0 && l2 >= 0 && l3 >= 0) {
+
+                    double invW = l1 * v1.invW + l2 * v2.invW + l3 * v3.invW;
+                    if (invW <= 1e-12 || !Double.isFinite(invW)) continue;
+
+                    double z = (l1 * v1.zOverW + l2 * v2.zOverW + l3 * v3.zOverW) / invW;
+                    if (!Double.isFinite(z)) continue;
+
+                    if (z < zBuffer.get(x, y)) {
+                        double nx = (l1 * v1.nxOverW + l2 * v2.nxOverW + l3 * v3.nxOverW) / invW;
+                        double ny = (l1 * v1.nyOverW + l2 * v2.nyOverW + l3 * v3.nyOverW) / invW;
+                        double nz = (l1 * v1.nzOverW + l2 * v2.nzOverW + l3 * v3.nzOverW) / invW;
+
+                        Vector3 normal = new Vector3((float) nx, (float) ny, (float) nz).normalized();
+                        Color finalColor = Lighting.applySmoothLighting(baseColor, normal, light);
+
+                        pixelWriter.setColor(x, y, finalColor);
+                        zBuffer.set(x, y, z);
+                    }
+                }
+            }
+        }
+    }
+
+
+    public static class ProjectedVertex {
+        public final float x;      // screen
+        public final float y;      // screen
+        public final double invW;  // 1 / clip.w
+        public final double zOverW; // clip.z / clip.w
+        // Для текстур:
+        public final double uOverW;
+        public final double vOverW;
+        // Для нормалей (опционально, но рекомендую для освещения):
+        public final double nxOverW, nyOverW, nzOverW;
+
+        public ProjectedVertex(
+                float x, float y,
+                double invW, double zOverW,
+                double uOverW, double vOverW,
+                double nxOverW, double nyOverW, double nzOverW
+        ) {
+            this.x = x; this.y = y;
+            this.invW = invW;
+            this.zOverW = zOverW;
+            this.uOverW = uOverW; this.vOverW = vOverW;
+            this.nxOverW = nxOverW; this.nyOverW = nyOverW; this.nzOverW = nzOverW;
         }
     }
 

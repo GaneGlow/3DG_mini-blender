@@ -130,16 +130,131 @@ public class Rasterization {
         int endX = (int) Math.floor(x2);
 
         double dx = x2 - x1;
+
+        // Защита от деления на ноль (может возникать на границах треугольника)
+        if (Math.abs(dx) < 1e-12) {
+            int x = (int) Math.round(x1);
+            if (x >= 0 && x < zBuffer.getWidth() && y >= 0 && y < zBuffer.getHeight()) {
+                double z = z1;
+                if (Double.isFinite(z) && z < zBuffer.get(x, y)) {
+                    pixelWriter.setColor(x, y, color);
+                    zBuffer.set(x, y, z);
+                }
+            }
+            return;
+        }
         for (int x = startX; x <= endX; x++) {
             if (x < 0 || x >= zBuffer.getWidth()) continue;
 
             double t = (x - x1) / dx;
             double z = interpolate(z1, z2, t);
 
+            if (!Double.isFinite(z)) {
+                continue;
+            }
+
             // Проверка глубины
             if (z < zBuffer.get(x, y)) {
                 pixelWriter.setColor(x, y, color);
                 zBuffer.set(x, y, z);
+            }
+        }
+    }
+
+    // =========================
+    // Перспективно-корректные методы (depth + attrs)
+    // =========================
+
+    /**
+     * Заполнение треугольника одним цветом с перспективно-корректной глубиной.
+     *
+     * Входные параметры:
+     *  - (x,y) в экранных координатах
+     *  - invW = 1/clip.w
+     *  - zOverW = clip.z/clip.w (NDC z)
+     */
+    public static void fillTrianglePerspectiveCorrect(
+            PixelWriter pixelWriter,
+            ZBuffer zBuffer,
+            double x1, double y1, double invW1, double zOverW1,
+            double x2, double y2, double invW2, double zOverW2,
+            double x3, double y3, double invW3, double zOverW3,
+            Color color
+    ) {
+        int minX = (int) Math.max(0, Math.floor(Math.min(x1, Math.min(x2, x3))));
+        int maxX = (int) Math.min(zBuffer.getWidth() - 1, Math.ceil(Math.max(x1, Math.max(x2, x3))));
+        int minY = (int) Math.max(0, Math.floor(Math.min(y1, Math.min(y2, y3))));
+        int maxY = (int) Math.min(zBuffer.getHeight() - 1, Math.ceil(Math.max(y1, Math.max(y2, y3))));
+
+        BarycentricConstants constants = new BarycentricConstants(x1, y1, x2, y2, x3, y3);
+        if (constants.isDegenerate) return;
+
+        for (int y = minY; y <= maxY; y++) {
+            for (int x = minX; x <= maxX; x++) {
+                double[] lambdas = computeBarycentricCoordinates(x, y, constants);
+                double l1 = lambdas[0], l2 = lambdas[1], l3 = lambdas[2];
+
+                if (l1 >= 0 && l2 >= 0 && l3 >= 0) {
+                    double invW = l1 * invW1 + l2 * invW2 + l3 * invW3;
+                    if (invW <= 1e-12 || !Double.isFinite(invW)) continue;
+
+                    double zOverW = l1 * zOverW1 + l2 * zOverW2 + l3 * zOverW3;
+                    double z = zOverW / invW;
+
+                    if (!Double.isFinite(z)) continue;
+
+                    if (z < zBuffer.get(x, y)) {
+                        pixelWriter.setColor(x, y, color);
+                        zBuffer.set(x, y, z);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Текстурированный треугольник с перспективно-корректными UV и глубиной.
+     * uOverW = u * invW, vOverW = v * invW.
+     */
+    public static void fillTriangleTexturedPerspectiveCorrect(
+            PixelWriter pixelWriter,
+            ZBuffer zBuffer,
+            double x1, double y1, double invW1, double zOverW1, double uOverW1, double vOverW1,
+            double x2, double y2, double invW2, double zOverW2, double uOverW2, double vOverW2,
+            double x3, double y3, double invW3, double zOverW3, double uOverW3, double vOverW3,
+            Texture texture
+    ) {
+        if (texture == null || !texture.isValid()) return;
+
+        int minX = (int) Math.max(0, Math.floor(Math.min(x1, Math.min(x2, x3))));
+        int maxX = (int) Math.min(zBuffer.getWidth() - 1, Math.ceil(Math.max(x1, Math.max(x2, x3))));
+        int minY = (int) Math.max(0, Math.floor(Math.min(y1, Math.min(y2, y3))));
+        int maxY = (int) Math.min(zBuffer.getHeight() - 1, Math.ceil(Math.max(y1, Math.max(y2, y3))));
+
+        BarycentricConstants constants = new BarycentricConstants(x1, y1, x2, y2, x3, y3);
+        if (constants.isDegenerate) return;
+
+        for (int y = minY; y <= maxY; y++) {
+            for (int x = minX; x <= maxX; x++) {
+                double[] lambdas = computeBarycentricCoordinates(x, y, constants);
+                double l1 = lambdas[0], l2 = lambdas[1], l3 = lambdas[2];
+
+                if (l1 >= 0 && l2 >= 0 && l3 >= 0) {
+                    double invW = l1 * invW1 + l2 * invW2 + l3 * invW3;
+                    if (invW <= 1e-12 || !Double.isFinite(invW)) continue;
+
+                    double z = (l1 * zOverW1 + l2 * zOverW2 + l3 * zOverW3) / invW;
+                    if (!Double.isFinite(z)) continue;
+
+                    if (z < zBuffer.get(x, y)) {
+                        double u = (l1 * uOverW1 + l2 * uOverW2 + l3 * uOverW3) / invW;
+                        double v = (l1 * vOverW1 + l2 * vOverW2 + l3 * vOverW3) / invW;
+
+                        Color color = texture.getColor(u, v);
+                        pixelWriter.setColor(x, y, color);
+                        zBuffer.set(x, y, z);
+                    }
+                }
             }
         }
     }
@@ -428,6 +543,7 @@ public class Rasterization {
             z += dz;
         }
     }
+
 
 
 
