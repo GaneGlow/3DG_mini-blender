@@ -3,9 +3,9 @@ package com.cgvsu.math;
 import java.util.Objects;
 
 public final class Vector3 {
-    public final float x;
-    public final float y;
-    public final float z;
+    public float x;
+    public float y;
+    public float z;
 
     private static final float EPS = 1e-7f;
 

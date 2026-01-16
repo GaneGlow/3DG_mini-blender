@@ -1,4 +1,6 @@
 package com.cgvsu.render_engine;
+
+
 import com.cgvsu.math.Matrix4;
 import com.cgvsu.math.Vector3;
 
@@ -40,16 +42,30 @@ public class Camera {
     }
 
     public void movePosition(final Vector3 translation) {
-        this.position.add(translation);
+        if (translation == null) {
+            return;
+        }
+
+        // Не полагаемся на то, изменяет ли Vector3 себя «на месте».
+        // Явно пересчитываем координаты.
+        this.position = new Vector3(
+                this.position.x + translation.x,
+                this.position.y + translation.y,
+                this.position.z + translation.z
+        );
     }
 
     public void moveTarget(final Vector3 translation) {
-        this.target.add(target);
+        if (translation == null) {
+            return;
+        }
+
+        this.target = new Vector3(
+                this.target.x + translation.x,
+                this.target.y + translation.y,
+                this.target.z + translation.z
+        );
     }
-
-    public float getFov() { return fov; }
-
-    public void setFov(float fov) { this.fov = fov; }
 
     public Matrix4 getViewMatrix() {
         return GraphicConveyor.lookAt(position, target);

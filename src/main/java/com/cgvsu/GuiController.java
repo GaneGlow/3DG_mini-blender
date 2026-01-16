@@ -111,6 +111,16 @@ public class GuiController {
     private int mouseX = 0;
     private int mouseY = 0;
 
+    /**
+     * Флаг, чтобы программное обновление спиннеров (например, при выборе объекта)
+     * не вызывало применение трансформаций через слушатели.
+     */
+    private boolean updatingTransformUI = false;
+
+    private enum Axis { X, Y, Z }
+
+    private enum TransformKind { TRANSLATION, ROTATION, SCALE }
+
     @FXML
     private void initialize() {
         // Настройка адаптивных размеров
@@ -162,11 +172,15 @@ public class GuiController {
 
         setupSpinner(rotationZSpinner, 0.0, "Z", -1000.0, 1000.0);
 
-        setupSpinner(scaleXSpinner, 0.0, "X", -1000.0, 1000.0);
+        // Масштаб по умолчанию = 1 (а не 0), иначе модель "схлопнется".
+        setupSpinner(scaleXSpinner, 1.0, "X", -1000.0, 1000.0);
 
-        setupSpinner(scaleYSpinner, 0.0, "Y", -1000.0, 1000.0);
+        setupSpinner(scaleYSpinner, 1.0, "Y", -1000.0, 1000.0);
 
-        setupSpinner(scaleZSpinner, 0.0, "Z", -1000.0, 1000.0);
+        setupSpinner(scaleZSpinner, 1.0, "Z", -1000.0, 1000.0);
+
+        // Подключаем аффинные преобразования (Translation/Rotation/Scale) к UI.
+        bindTransformSpinners();
 
         timeline = new Timeline();
         timeline.setCycleCount(Animation.INDEFINITE);
@@ -248,13 +262,6 @@ public class GuiController {
         // Разрешаем редактирование вручную
         spinner.setEditable(true);
 
-        // Добавляем слушатель изменения значения
-        spinner.valueProperty().addListener((obs, oldValue, newValue) -> {
-            // метод для перемещения и тп, я пока не знаю как разделитель слушателя на три коробки
-            // поэтому всё пока что здесь в одной куче
-            // Катя разберись с этим потом!
-        });
-
         // Обработка ручного ввода
         spinner.getEditor().setOnAction(event -> {
             try {
@@ -279,6 +286,249 @@ public class GuiController {
         spinner.valueProperty().addListener((obs, oldVal, newVal) -> {
             spinner.getEditor().setText(String.format("%.2f", newVal));
         });
+    }
+
+    /**
+     * Подключает спиннеры Translation/Rotation/Scale к аффинным преобразованиям объектов сцены.
+     *
+     * Важно:
+     * - Rotation в UI считаем в градусах, в Transform храним в радианах.
+     * - При изменении спиннера применяем ДЕЛЬТУ (new-old), чтобы корректно работало
+     *   для нескольких выбранных объектов и не "затирало" их индивидуальные значения.
+     */
+    private void bindTransformSpinners() {
+        bindTransformSpinner(translationXSpinner, TransformKind.TRANSLATION, Axis.X);
+        bindTransformSpinner(translationYSpinner, TransformKind.TRANSLATION, Axis.Y);
+        bindTransformSpinner(translationZSpinner, TransformKind.TRANSLATION, Axis.Z);
+
+        bindTransformSpinner(rotationXSpinner, TransformKind.ROTATION, Axis.X);
+        bindTransformSpinner(rotationYSpinner, TransformKind.ROTATION, Axis.Y);
+        bindTransformSpinner(rotationZSpinner, TransformKind.ROTATION, Axis.Z);
+
+        bindTransformSpinner(scaleXSpinner, TransformKind.SCALE, Axis.X);
+        bindTransformSpinner(scaleYSpinner, TransformKind.SCALE, Axis.Y);
+        bindTransformSpinner(scaleZSpinner, TransformKind.SCALE, Axis.Z);
+    }
+
+    private void bindTransformSpinner(
+            final Spinner<Double> spinner,
+            final TransformKind kind,
+            final Axis axis
+    ) {
+        if (spinner == null) {
+            return;
+        }
+
+        spinner.valueProperty().addListener((obs, oldValue, newValue) -> {
+            if (updatingTransformUI) {
+                return;
+            }
+            if (oldValue == null || newValue == null) {
+                return;
+            }
+            if (Math.abs(newValue - oldValue) < 1e-12) {
+                return;
+            }
+            if (selectedObjects.isEmpty()) {
+                return;
+            }
+
+            applyTransformDelta(kind, axis, oldValue, newValue);
+
+            // Обновляем цвета объектов (это вызовет перерисовку в следующем кадре)
+            updateObjectColors();
+
+            // Если нужно немедленное обновление, можно принудительно перерисовать один кадр
+            // canvas.getGraphicsContext2D().clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
+            // renderFrame();
+        });
+    }
+
+    private void applyTransformDelta(
+            final TransformKind kind,
+            final Axis axis,
+            final double oldValue,
+            final double newValue
+    ) {
+
+        switch (kind) {
+            case TRANSLATION: {
+                final float d = (float) (newValue - oldValue);
+                for (SceneObject obj : selectedObjects) {
+                    Transform t = ensureTransform(obj);
+                    if (t == null) continue;
+
+                    switch (axis) {
+                        case X: t.translate(d, 0, 0); break;
+                        case Y: t.translate(0, d, 0); break;
+                        case Z: t.translate(0, 0, d); break;
+                    }
+                }
+                break;
+            }
+            case ROTATION: {
+                final float dRad = (float) Math.toRadians(newValue - oldValue);
+                for (SceneObject obj : selectedObjects) {
+                    Transform t = ensureTransform(obj);
+                    if (t == null) continue;
+
+                    switch (axis) {
+                        case X: t.rotate(dRad, 0, 0); break;
+                        case Y: t.rotate(0, dRad, 0); break;
+                        case Z: t.rotate(0, 0, dRad); break;
+                    }
+                }
+                break;
+            }
+            case SCALE: {
+                final double EPS = 1e-9;
+                final boolean oldIsZero = Math.abs(oldValue) < EPS;
+
+                if (oldIsZero) {
+                    final float absolute = (float) newValue;
+                    for (SceneObject obj : selectedObjects) {
+                        Transform t = ensureTransform(obj);
+                        if (t == null) continue;
+                        setScaleComponent(t, axis, absolute);
+                    }
+                } else {
+                    final float factor = (float) (newValue / oldValue);
+                    for (SceneObject obj : selectedObjects) {
+                        Transform t = ensureTransform(obj);
+                        if (t == null) continue;
+                        multiplyScaleComponent(t, axis, factor);
+                    }
+
+                }
+                break;
+
+            }
+        }
+
+        // ВАЖНО: Нужно обновить спиннеры, чтобы они отображали актуальные значения
+        updateTransformSpinnersFromSelection();
+
+        // Обновляем цвета для перерисовки
+        updateObjectColors();
+    }
+
+    private Transform ensureTransform(final SceneObject obj) {
+        if (obj == null) {
+            return null;
+        }
+        Transform t = obj.getTransform();
+        if (t == null) {
+            t = new Transform();
+            obj.setTransform(t);
+        }
+        return t;
+    }
+
+    private void setScaleComponent(final Transform t, final Axis axis, final float value) {
+        if (t == null) return;
+
+        Vector3 s = (t.getScale() != null) ? t.getScale() : new Vector3(1, 1, 1);
+        switch (axis) {
+            case X:
+                s.x = value;
+                break;
+            case Y:
+                s.y = value;
+                break;
+            case Z:
+                s.z = value;
+                break;
+        }
+        t.setScale(s);
+    }
+
+    private void multiplyScaleComponent(final Transform t, final Axis axis, final float factor) {
+        if (t == null) return;
+
+        // В Transform есть scaleX/scaleY/scaleZ, которые как раз умножают компоненту.
+        switch (axis) {
+            case X:
+                t.scaleX(factor);
+                break;
+            case Y:
+                t.scaleY(factor);
+                break;
+            case Z:
+                t.scaleZ(factor);
+                break;
+        }
+    }
+
+    private void updateTransformSpinnersFromSelection() {
+        updatingTransformUI = true;
+        try {
+            if (selectedObjects.isEmpty()) {
+                setSpinnerValue(translationXSpinner, 0.0);
+                setSpinnerValue(translationYSpinner, 0.0);
+                setSpinnerValue(translationZSpinner, 0.0);
+
+                setSpinnerValue(rotationXSpinner, 0.0);
+                setSpinnerValue(rotationYSpinner, 0.0);
+                setSpinnerValue(rotationZSpinner, 0.0);
+
+                setSpinnerValue(scaleXSpinner, 1.0);
+                setSpinnerValue(scaleYSpinner, 1.0);
+                setSpinnerValue(scaleZSpinner, 1.0);
+                return;
+            }
+
+            // Показываем параметры последнего выбранного объекта.
+            SceneObject active = selectedObjects.get(selectedObjects.size() - 1);
+            Transform t = (active != null) ? active.getTransform() : null;
+
+            Vector3 tr = (t != null && t.getTranslation() != null) ? t.getTranslation() : new Vector3(0, 0, 0);
+            Vector3 rot = (t != null && t.getRotation() != null) ? t.getRotation() : new Vector3(0, 0, 0);
+            Vector3 sc = (t != null && t.getScale() != null) ? t.getScale() : new Vector3(1, 1, 1);
+
+            setSpinnerValue(translationXSpinner, tr.x);
+            setSpinnerValue(translationYSpinner, tr.y);
+            setSpinnerValue(translationZSpinner, tr.z);
+
+            // Rotation в UI в градусах
+            setSpinnerValue(rotationXSpinner, Math.toDegrees(rot.x));
+            setSpinnerValue(rotationYSpinner, Math.toDegrees(rot.y));
+            setSpinnerValue(rotationZSpinner, Math.toDegrees(rot.z));
+
+            setSpinnerValue(scaleXSpinner, sc.x);
+            setSpinnerValue(scaleYSpinner, sc.y);
+            setSpinnerValue(scaleZSpinner, sc.z);
+        } finally {
+            updatingTransformUI = false;
+        }
+    }
+
+    private void setSpinnerValue(final Spinner<Double> spinner, final double value) {
+        if (spinner == null || spinner.getValueFactory() == null) {
+            return;
+        }
+        spinner.getValueFactory().setValue(value);
+    }
+
+    /**
+     * Локальная копия логики построения modelMatrix (как в RenderEngine),
+     * чтобы можно было корректно вычислять попадание курсора по объекту.
+     */
+    private Matrix4 getModelMatrix(final SceneObject sceneObject) {
+        if (sceneObject == null || sceneObject.getTransform() == null) {
+            return GraphicConveyor.createModelMatrix(
+                    new Vector3(0, 0, 0),
+                    new Vector3(0, 0, 0),
+                    new Vector3(1, 1, 1)
+            );
+        }
+
+        final Transform t = sceneObject.getTransform();
+
+        final Vector3 translation = (t.getTranslation() != null) ? t.getTranslation() : new Vector3(0, 0, 0);
+        final Vector3 rotation = (t.getRotation() != null) ? t.getRotation() : new Vector3(0, 0, 0);
+        final Vector3 scale = (t.getScale() != null) ? t.getScale() : new Vector3(1, 1, 1);
+
+        return GraphicConveyor.createModelMatrix(translation, rotation, scale);
     }
 
     // Метод для применения параметра к выбранным объектам
@@ -410,6 +660,10 @@ public class GuiController {
                 lightingCheckBox.setSelected(renderSettings.useLighting);
             }
         }
+
+        // Также обновляем значения трансформаций в UI
+        // (показываем параметры последнего выбранного объекта).
+        updateTransformSpinnersFromSelection();
     }
 
     private void handleObjectSelection(int mouseX, int mouseY) {
@@ -440,26 +694,36 @@ public class GuiController {
         Model mesh = obj.getModel();
         Camera camera = this.camera; // Используем текущую камеру
 
-        // Матрицы преобразования
-        Matrix4 modelMatrix = GraphicConveyor.rotateScaleTranslate();
+        // Матрицы преобразования (как в RenderEngine): v_clip = P * V * M * v
+        Matrix4 modelMatrix = getModelMatrix(obj);
         Matrix4 viewMatrix = camera.getViewMatrix();
         Matrix4 projectionMatrix = camera.getProjectionMatrix();
-        Matrix4 modelViewProjectionMatrix = modelMatrix.multiply(viewMatrix).multiply(projectionMatrix);
+        Matrix4 modelViewProjectionMatrix = projectionMatrix.multiply(viewMatrix).multiply(modelMatrix);
 
-        float minX = Float.MAX_VALUE;
-        float maxX = Float.MIN_VALUE;
-        float minY = Float.MAX_VALUE;
-        float maxY = Float.MIN_VALUE;
+        float minX = Float.POSITIVE_INFINITY;
+        float maxX = Float.NEGATIVE_INFINITY;
+        float minY = Float.POSITIVE_INFINITY;
+        float maxY = Float.NEGATIVE_INFINITY;
 
         // Проходим по всем вершинам и находим границы
         for (Vector3 vertex : mesh.vertices) {
             Vector3 screenPos = transformVertex(vertex, modelViewProjectionMatrix,
-                    (int)canvas.getWidth(), (int)canvas.getHeight());
+                    (int) canvas.getWidth(), (int) canvas.getHeight());
+
+            // multiplyMatrix4ByVector3 может вернуть NaN, если w ~ 0
+            if (Float.isNaN(screenPos.x) || Float.isNaN(screenPos.y)) {
+                continue;
+            }
 
             minX = Math.min(minX, screenPos.x);
             maxX = Math.max(maxX, screenPos.x);
             minY = Math.min(minY, screenPos.y);
             maxY = Math.max(maxY, screenPos.y);
+        }
+
+        // Если все вершины оказались невалидными (например, объект полностью на плоскости камеры)
+        if (!Float.isFinite(minX) || !Float.isFinite(maxX) || !Float.isFinite(minY) || !Float.isFinite(maxY)) {
+            return false;
         }
 
         // Проверяем, попадает ли точка в bounding box
