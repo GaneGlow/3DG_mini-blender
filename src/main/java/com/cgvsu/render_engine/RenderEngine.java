@@ -17,7 +17,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static com.cgvsu.rasterization.Rasterization.drawLineWithZBuffer;
+import static com.cgvsu.rasterization.Rasterization.drawLineWithDepthTestOnly;
+
 
 public class RenderEngine {
 
@@ -341,10 +342,6 @@ public class RenderEngine {
             final int width,
             final int height) {
 
-        // Используем отдельный Z-буфер для линий
-        ZBuffer lineZBuffer = new ZBuffer(width, height);
-        lineZBuffer.clear();
-
         // Матрицы преобразования
         final Matrix4 viewMatrix = camera.getViewMatrix();
         final Matrix4 projectionMatrix = camera.getProjectionMatrix();
@@ -394,7 +391,8 @@ public class RenderEngine {
             Vector3 v1Offset = new Vector3(v1.x, v1.y, v1.z + zOffset);
             Vector3 v2Offset = new Vector3(v2.x, v2.y, v2.z + zOffset);
 
-            drawLineWithZBuffer(pixelWriter, lineZBuffer, v1Offset, v2Offset, wireframeColor);
+            drawLineWithDepthTestOnly(pixelWriter, zBuffer, v1Offset, v2Offset, wireframeColor);
+
         }
     }
 

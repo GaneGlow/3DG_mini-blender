@@ -10,14 +10,14 @@ public final class Vector3 {
     private static final float EPS = 1e-7f;
 
     public Vector3(float x, float y, float z) {
-        if (!Float.isFinite(x) || !Float.isFinite(y) || !Float.isFinite(z)) {
-            throw new IllegalArgumentException("Координаты должны быть конечными числами");
+        if (Float.isInfinite(x) || Float.isInfinite(y) || Float.isInfinite(z)) {
+            throw new IllegalArgumentException("Координаты не должны быть бесконечными");
         }
-
         this.x = x;
         this.y = y;
         this.z = z;
     }
+
 
     public Vector3 add(Vector3 o) {
         Objects.requireNonNull(o, "Переданный в качестве аргумента вектор нулевой!");
