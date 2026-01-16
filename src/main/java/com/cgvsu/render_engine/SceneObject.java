@@ -7,7 +7,6 @@ public class SceneObject {
     private String name;
     private Model model;
     private Texture texture;
-    private Transform transform = new Transform();
     private boolean visible = true;
 
     // Добавляем цвета для отображения
@@ -22,11 +21,6 @@ public class SceneObject {
         this.texture = texture;
     }
 
-    public SceneObject(String name, Model model, Texture texture, Transform transform) {
-        this(name, model, texture);
-        setTransform(transform);
-    }
-
     // Getters and setters
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
@@ -36,14 +30,6 @@ public class SceneObject {
 
     public Texture getTexture() { return texture; }
     public void setTexture(Texture texture) { this.texture = texture; }
-
-    public Transform getTransform() {
-        return transform;
-    }
-
-    public void setTransform(Transform transform) {
-        this.transform = (transform != null) ? transform : new Transform();
-    }
 
     public boolean isVisible() { return visible; }
     public void setVisible(boolean visible) { this.visible = visible; }
