@@ -371,6 +371,63 @@ public class Rasterization {
         }
     }
 
+    public static void drawLineWithDepthTestOnly(
+            PixelWriter pixelWriter,
+            ZBuffer zBuffer,
+            Vector3 start,
+            Vector3 end,
+            Color color) {
+
+        drawLineWithDepthTestOnly(pixelWriter, zBuffer,
+                start.x, start.y, start.z,
+                end.x, end.y, end.z,
+                color);
+    }
+
+    private static void drawLineWithDepthTestOnly(
+            PixelWriter pixelWriter,
+            ZBuffer zBuffer,
+            double x1, double y1, double z1,
+            double x2, double y2, double z2,
+            Color color) {
+
+        int x0 = (int) Math.round(x1);
+        int y0 = (int) Math.round(y1);
+        int x1i = (int) Math.round(x2);
+        int y1i = (int) Math.round(y2);
+
+        int dx = Math.abs(x1i - x0);
+        int dy = Math.abs(y1i - y0);
+
+        int sx = Integer.compare(x1i, x0);
+        int sy = Integer.compare(y1i, y0);
+
+        int err = dx - dy;
+
+        int steps = Math.max(dx, dy);
+        double dz = (steps == 0) ? 0.0 : (z2 - z1) / steps;
+        double z = z1;
+
+        while (true) {
+            if (x0 >= 0 && x0 < zBuffer.getWidth()
+                    && y0 >= 0 && y0 < zBuffer.getHeight()) {
+
+                // ТОЛЬКО ПРОВЕРКА глубины
+                if (z < zBuffer.get(x0, y0)) {
+                    pixelWriter.setColor(x0, y0, color);
+                    // ВАЖНО: НЕ ДЕЛАЕМ zBuffer.set(...)
+                }
+            }
+
+            if (x0 == x1i && y0 == y1i) break;
+
+            int e2 = 2 * err;
+            if (e2 > -dy) { err -= dy; x0 += sx; }
+            if (e2 <  dx) { err += dx; y0 += sy; }
+
+            z += dz;
+        }
+    }
 
 
 
