@@ -324,6 +324,7 @@ public class GuiController {
     @FXML
     private void onView1() {
         cameraManager.switchToCamera(0);
+
     }
 
     @FXML
@@ -861,11 +862,12 @@ public class GuiController {
 
         if (width <= 0 || height <= 0) return;
 
+        cameraManager.updateCamerasFromGizmos();
+
         canvas.getGraphicsContext2D().setFill(backgroundColor);
         canvas.getGraphicsContext2D().fillRect(0, 0, width, height);
 
         scene.getActiveCamera().setAspectRatio((float) (width / height));
-
 
         if (!scene.getObjects().isEmpty()) {
             // Передаем глобальные настройки, но каждый объект будет использовать свои,
