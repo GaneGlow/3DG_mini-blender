@@ -20,8 +20,7 @@ public class RenderEngine {
 
     public static void render(
             final GraphicsContext graphicsContext,
-            final Camera camera,
-            final List<SceneObject> sceneObjects,
+            final Scene scene,
             final Texture texture,
             final RenderSettings globalSettings,
             final int width,
@@ -34,7 +33,7 @@ public class RenderEngine {
         ZBuffer zBuffer = new ZBuffer(width, height);
         zBuffer.clear();
 
-        for (SceneObject sceneObject : sceneObjects) {
+        for (SceneObject sceneObject : scene.getObjects()) {
             if (!sceneObject.isVisible()) {
                 continue; // Пропускаем невидимые объекты
             }
@@ -52,11 +51,11 @@ public class RenderEngine {
             }
 
             // ПЕРВЫЙ ПРОХОД: Отрисовка треугольников с Z-буфером
-            renderTriangles(graphicsContext, camera, mesh, texture, objectSettings, baseColor, zBuffer, width, height);
+            renderTriangles(graphicsContext, scene.getActiveCamera(), mesh, texture, objectSettings, baseColor, zBuffer, width, height);
 
             // ВТОРОЙ ПРОХОД: Отрисовка полигональной сетки (если нужно)
             if (objectSettings.drawWireframe) {
-                renderWireframe(graphicsContext, camera, mesh, wireframeColor, zBuffer, width, height);
+                renderWireframe(graphicsContext, scene.getActiveCamera(), mesh, wireframeColor, zBuffer, width, height);
             }
         }
     }

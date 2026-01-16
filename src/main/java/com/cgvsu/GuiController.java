@@ -4,6 +4,7 @@ import com.cgvsu.math.Matrix4;
 import com.cgvsu.math.Vector3;
 import com.cgvsu.model.ModelPreparationUtils;
 import com.cgvsu.render_engine.*;
+import com.cgvsu.render_engine.camera_gizmo.CameraManager;
 import javafx.fxml.FXML;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
@@ -11,6 +12,7 @@ import javafx.animation.Timeline;
 import javafx.event.ActionEvent;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.*;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
@@ -91,16 +93,27 @@ public class GuiController {
     @FXML
     private Spinner<Double> scaleZSpinner;
 
+    @FXML
+    private Menu viewMenu;
+
+    @FXML
+    private MenuItem addCameraMenuItem;
+
+    // Менеджер камер
+    private CameraManager cameraManager;
+
+
     private final RenderSettings renderSettings = new RenderSettings();
-    private final List<SceneObject> sceneObjects = new ArrayList<>(); // Добавляем список объектов
+    //private final List<SceneObject> sceneObjects = new ArrayList<>(); // Добавляем список объектов
+    private final Scene scene = new Scene();
     private Texture currentTexture = null;
 
     private Model mesh = null;
 
-    private Camera camera = new Camera(
+    /*private Camera camera = new Camera(
             new Vector3(0, 0, 100),
             new Vector3(0, 0, 0),
-            1.0F, 1, 0.01F, 100);
+            1.0F, 1, 0.01F, 100);*/
 
     private Timeline timeline;
 
@@ -113,6 +126,10 @@ public class GuiController {
 
     @FXML
     private void initialize() {
+        // Инициализируем менеджер камер
+        cameraManager = new CameraManager(scene);
+        cameraManager.initializeWithUI(viewMenu, addCameraMenuItem);
+
         // Настройка адаптивных размеров
         anchorPane.widthProperty().addListener((obs, oldVal, newVal) -> {
             canvas.setWidth(newVal.doubleValue() - 250);
@@ -176,7 +193,8 @@ public class GuiController {
             double height = canvas.getHeight();
 
             canvas.getGraphicsContext2D().clearRect(0, 0, width, height);
-            camera.setAspectRatio((float) (width / height));
+            scene.getActiveCamera().setAspectRatio((float) (width / height));
+
 
             /*if (mesh != null) {
                 RenderEngine.render(
@@ -210,6 +228,23 @@ public class GuiController {
 
         timeline.getKeyFrames().add(frame);
         timeline.play();
+    }
+
+    ///КАМЕРЫ
+    @FXML
+    private void onView1() {
+        cameraManager.switchToCamera(0);
+    }
+
+    @FXML
+    private void onAddCamera(ActionEvent event) {
+        if (cameraManager.addNewCamera()) {
+            showAlert("Камера добавлена",
+                    "Добавлена новая камера. Всего камер: " + cameraManager.getCameraCount());
+        } else {
+            showAlert("Максимальное количество камер",
+                    "Достигнуто максимальное количество камер (8).");
+        }
     }
 
     private void setupSpinner(Spinner<Double> spinner, double initialValue, String axis, double min, double max) {
@@ -336,7 +371,7 @@ public class GuiController {
         else {
             // Только количество моделей на сцене
             infoText = String.format("Объектов на сцене: %d",
-                    sceneObjects.size());
+                    scene.getObjectCountWithoutCameras());
         }
 
         modelInfoLabel.setText(infoText);
@@ -358,7 +393,7 @@ public class GuiController {
             }
         } else {
             // Если ничего не выбрано, сбрасываем настройки у всех объектов
-            for (SceneObject obj : sceneObjects) {
+            for (SceneObject obj : scene.getObjects()) {
                 obj.resetRenderSettings();
             }
         }
@@ -380,7 +415,7 @@ public class GuiController {
     }
 
     private SceneObject findObjectUnderCursor(int x, int y) {
-        for (SceneObject obj : sceneObjects) {
+        for (SceneObject obj : scene.getObjects()) {
             if (isMouseOverObject(obj, x, y)) {
                 return obj;
             }
@@ -438,7 +473,7 @@ public class GuiController {
         // Для этого нужно преобразовать вершины в экранные координаты
 
         Model mesh = obj.getModel();
-        Camera camera = this.camera; // Используем текущую камеру
+        Camera camera = scene.getActiveCamera(); // Используем текущую камеру
 
         // Матрицы преобразования
         Matrix4 modelMatrix = GraphicConveyor.rotateScaleTranslate();
@@ -480,7 +515,7 @@ public class GuiController {
 
     // Обновление цветов объектов в зависимости от выбора
     private void updateObjectColors() {
-        for (SceneObject obj : sceneObjects) {
+        for (SceneObject obj : scene.getObjects()) {
             if (selectedObjects.contains(obj)) {
                 // Выделение (клик) - голубой цвет для сетки и серо-голубой для модели
                 obj.setWireframeColor(Color.CYAN);
@@ -508,15 +543,15 @@ public class GuiController {
         canvas.getGraphicsContext2D().setFill(backgroundColor);
         canvas.getGraphicsContext2D().fillRect(0, 0, width, height);
 
-        camera.setAspectRatio((float) (width / height));
+        scene.getActiveCamera().setAspectRatio((float) (width / height));
 
-        if (!sceneObjects.isEmpty()) {
+
+        if (!scene.getObjects().isEmpty()) {
             // Передаем глобальные настройки, но каждый объект будет использовать свои,
             // если они заданы
             RenderEngine.render(
                     canvas.getGraphicsContext2D(),
-                    camera,
-                    sceneObjects,
+                    scene,
                     currentTexture,  // Это глобальная текстура, но можно убрать
                     renderSettings,  // Глобальные настройки (будут использованы, если у объекта нет своих)
                     (int) width,
@@ -546,7 +581,7 @@ public class GuiController {
 
             String objectName = file.getName().replace(".obj", "");
             SceneObject newObject = new SceneObject(objectName, mesh, currentTexture);
-            sceneObjects.add(newObject);
+            scene.addObject(newObject);
 
             newObject.setWireframeColor(Color.WHITE);
             newObject.setModelColor(renderSettings.baseColor);
@@ -620,7 +655,7 @@ public class GuiController {
 
         if (result.isPresent() && result.get() == deleteButton) {
             // Удаляем выбранные объекты из сцены
-            sceneObjects.removeAll(selectedObjects);
+            scene.removeSelectedObjects(selectedObjects);
 
             // Очищаем список выбранных объектов
             selectedObjects.clear();
@@ -653,31 +688,55 @@ public class GuiController {
 
     @FXML
     public void handleCameraForward(ActionEvent actionEvent) {
-        camera.movePosition(new Vector3(0, 0, -TRANSLATION));
+        scene.getActiveCamera().movePosition(new Vector3(0, 0, -TRANSLATION));
     }
 
     @FXML
     public void handleCameraBackward(ActionEvent actionEvent) {
-        camera.movePosition(new Vector3(0, 0, TRANSLATION));
+        scene.getActiveCamera().movePosition(new Vector3(0, 0, TRANSLATION));
     }
 
     @FXML
     public void handleCameraLeft(ActionEvent actionEvent) {
-        camera.movePosition(new Vector3(TRANSLATION, 0, 0));
+        scene.getActiveCamera().movePosition(new Vector3(TRANSLATION, 0, 0));
     }
 
     @FXML
     public void handleCameraRight(ActionEvent actionEvent) {
-        camera.movePosition(new Vector3(-TRANSLATION, 0, 0));
+        scene.getActiveCamera().movePosition(new Vector3(-TRANSLATION, 0, 0));
     }
 
     @FXML
     public void handleCameraUp(ActionEvent actionEvent) {
-        camera.movePosition(new Vector3(0, TRANSLATION, 0));
+        scene.getActiveCamera().movePosition(new Vector3(0, TRANSLATION, 0));
     }
 
     @FXML
     public void handleCameraDown(ActionEvent actionEvent) {
-        camera.movePosition(new Vector3(0, -TRANSLATION, 0));
+        scene.getActiveCamera().movePosition(new Vector3(0, -TRANSLATION, 0));
     }
+
+    @FXML
+    private void handleKeyPressed(KeyEvent event) {
+        // Камеры — ТОЛЬКО через Alt
+        boolean handled = cameraManager.handleKeyPressed(
+                event.getCode(),
+                event.isAltDown()
+        );
+
+        if (handled) {
+            return;
+        }
+
+        // Остальные горячие клавиши
+        switch (event.getCode()) {
+            case DELETE:
+            case BACK_SPACE:
+                if (!selectedObjects.isEmpty()) {
+                    onDeleteSelectedButtonClick(new ActionEvent());
+                }
+                break;
+        }
+    }
+
 }

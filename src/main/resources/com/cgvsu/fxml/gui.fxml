@@ -132,40 +132,27 @@
         </Menu>
 
         <!-- Меню вид -->
-        <Menu mnemonicParsing="false" text="Вид" styleClass="menu">
-            <MenuItem mnemonicParsing="false" onAction="#onOpenModelMenuItemClick" text="Вид 1"
-                      styleClass="menu-item">
-                <!-- пропиши методы для кнопок камеры #onOpenModelMenuItemClick вместо этой строки
-                 во всех кнопках-->
+        <Menu mnemonicParsing="false" text="Вид" styleClass="menu" fx:id="viewMenu">
+
+            <MenuItem mnemonicParsing="false"
+                      onAction="#onAddCamera"
+                      text="Добавить камеру"
+                      styleClass="menu-item"
+                      fx:id="addCameraMenuItem">
+
                 <accelerator>
-                    <KeyCodeCombination alt="UP" control="UP" meta="UP" shift="UP" shortcut="UP" code="V"/>
+                    <KeyCodeCombination
+                            alt="DOWN"
+                            control="UP"
+                            meta="UP"
+                            shift="UP"
+                            shortcut="UP"
+                            code="A"/>
                 </accelerator>
-            </MenuItem>
-            <MenuItem mnemonicParsing="false" onAction="#onOpenTextureMenuItemClick" text="Вид 2"
-                      styleClass="menu-item">
-                <accelerator>
-                    <KeyCodeCombination alt="UP" control="UP" meta="UP" shift="UP" shortcut="UP" code="C"/>
-                </accelerator>
-            </MenuItem>
-            <MenuItem mnemonicParsing="false" onAction="#onExitMenuItemClick" text="Вид 3"
-                      styleClass="menu-item">
-                <accelerator>
-                    <KeyCodeCombination alt="UP" control="UP" meta="UP" shift="UP" shortcut="UP" code="X"/>
-                </accelerator>
-            </MenuItem>
-            <MenuItem mnemonicParsing="false" onAction="#onExitMenuItemClick" text="Вид 4"
-                      styleClass="menu-item">
-                <accelerator>
-                    <KeyCodeCombination alt="UP" control="UP" meta="UP" shift="UP" shortcut="UP" code="B"/>
-                </accelerator>
-            </MenuItem>
-            <MenuItem mnemonicParsing="false" onAction="#onExitMenuItemClick" text="Добавить камеру"
-                      styleClass="menu-item">
-                <accelerator>
-                    <KeyCodeCombination alt="UP" control="DOWN" meta="UP" shift="UP" shortcut="UP" code="A"/>
-                </accelerator>
+
             </MenuItem>
         </Menu>
+
     </MenuBar>
 
     <!-- Панель настроек -->

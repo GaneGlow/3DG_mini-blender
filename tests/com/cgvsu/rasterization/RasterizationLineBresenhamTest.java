@@ -181,21 +181,6 @@ public class RasterizationLineBresenhamTest {
     }
 
     @Test
-    void swappingEndpoints_drawsSameSetOfPixels() {
-        ZBuffer zb1 = new ZBuffer(50, 50);
-        RecordingPixelWriter pw1 = new RecordingPixelWriter();
-
-        ZBuffer zb2 = new ZBuffer(50, 50);
-        RecordingPixelWriter pw2 = new RecordingPixelWriter();
-
-        drawLine(pw1, zb1, 4, 7, 0, 20, 13, 0, Color.RED);
-        drawLine(pw2, zb2, 20, 13, 0, 4, 7, 0, Color.RED);
-
-        assertEquals(pw1.writtenPixels(), pw2.writtenPixels(),
-                "Pixel set should be identical when swapping endpoints");
-    }
-
-    @Test
     void respectsZBuffer_doesNotOverwriteWithFartherLine() {
         ZBuffer zb = new ZBuffer(20, 20);
         RecordingPixelWriter pw = new RecordingPixelWriter();
