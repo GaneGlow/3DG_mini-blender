@@ -137,7 +137,6 @@ public class GraphicConveyor {
     public static Matrix4 createTranslationMatrix(Vector3 translation) {
         float[][] values = Matrix4.identity().m; // Копируем единичную матрицу
 
-        // Добавляем компоненты перемещения в последний столбец (для векторов-столбцов)
         values[0][3] = translation.x;
         values[1][3] = translation.y;
         values[2][3] = translation.z;
