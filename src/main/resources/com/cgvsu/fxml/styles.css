@@ -99,33 +99,47 @@
 
 /* ===== ПРАВАЯ ПАНЕЛЬ ===== */
 
-/* Правая панель управления */
-.right-panel {
+/* Основные стили для правой панели */
+.right-panel-scroll {
     -fx-background-color: #424242;
-    -fx-border-color: #555555;
-    -fx-border-width: 0 0 0 1;
-    -fx-padding: 15;
-    -fx-spacing: 10;
 }
 
-/* Заголовок правой панели */
-.right-panel-title {
-    -fx-font-weight: bold;
-    -fx-font-size: 16px;
+.right-panel-content {
+    -fx-background-color: #424242;
+    -fx-padding: 15px;
+}
+
+/* Убедитесь, что ScrollPane и его содержимое заполняют всё пространство */
+.right-panel-scroll .viewport {
+    -fx-background-color: transparent;
+}
+
+.right-panel-scroll .content {
+    -fx-background-color: transparent;
+}
+.right-panel-text {
     -fx-text-fill: white;
-    -fx-padding: 0 0 10 0;
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-padding: 10 0 10 0;
+}
+/* Цвет самого бегунка (ползунка) */
+.right-panel-scroll .scroll-bar:vertical .thumb {
+    -fx-background-color: #616161; /* цвет бегунка */
+    -fx-background-radius: 5px;
+    -fx-border-radius: 5px;
 }
 
-.bottom-panel {
+/* Цвет трека (дороги) скроллбара */
+.right-panel-scroll .scroll-bar:vertical .track {
+    -fx-background-color: #424242; /* цвет фона трека */
+    -fx-border-color: transparent;
+    -fx-background-radius: 0;
+}
+/* Цвет стрелок */
+.right-panel-scroll .scroll-bar:vertical .increment-button,
+.right-panel-scroll .scroll-bar:vertical .decrement-button {
     -fx-background-color: #424242;
-    -fx-padding: 5px 15px;
-    -fx-border-color: #555555;
-    -fx-border-width: 1px 0 0 0;
-    -fx-alignment: center-left;
-}
-
-.texture-info-label {
-    -fx-padding: 0 300 0 0;
 }
 
 /* ===== ПАНЕЛЬ НАСТРОЕК ===== */
@@ -166,40 +180,25 @@
     -fx-background-color: white;
 }
 
+/* ===== СТИЛИ ДЛЯ НИЖНЕЙ ПАНЕЛИ ===== */
+.bottom-panel {
+    -fx-background-color: #424242;
+    -fx-padding: 5px 15px;
+    -fx-border-color: #555555;
+    -fx-border-width: 1px 0 0 0;
+    -fx-alignment: center-left;
+}
+
+.texture-info-label {
+    -fx-padding: 0 300 0 0;
+}
+
+
 /* ===== СТИЛИ ДЛЯ ВСЕГО ТЕКСТА ===== */
 
 /* Все Label по умолчанию */
 .label {
     -fx-text-fill: white;
-}
-
-/* ===== SCROLLBAR СТИЛИ (если понадобится) ===== */
-
-.scroll-bar {
-    -fx-background-color: #424242;
-}
-
-.scroll-bar .thumb {
-    -fx-background-color: #313131;
-    -fx-background-radius: 5;
-}
-
-.scroll-bar .thumb:hover {
-    -fx-background-color: #515151;
-}
-
-.scroll-bar .track {
-    -fx-background-color: #424242;
-}
-
-.scroll-bar .increment-button,
-.scroll-bar .decrement-button {
-    -fx-background-color: transparent;
-}
-
-.scroll-bar .increment-arrow,
-.scroll-bar .decrement-arrow {
-    -fx-background-color: #a0a0a0;
 }
 
 /* ===== КНОПКИ ===== */

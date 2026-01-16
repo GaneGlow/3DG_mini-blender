@@ -5,6 +5,8 @@ import com.cgvsu.math.Vector3;
 import com.cgvsu.model.ModelPreparationUtils;
 import com.cgvsu.render_engine.*;
 import com.cgvsu.render_engine.camera_gizmo.CameraManager;
+import com.cgvsu.render_engine.scene.Scene;
+import com.cgvsu.render_engine.scene.SceneObject;
 import javafx.fxml.FXML;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
@@ -26,9 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.io.IOException;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 import com.cgvsu.model.Model;
 import com.cgvsu.objreader.ObjReader;
@@ -102,18 +102,16 @@ public class GuiController {
     // Менеджер камер
     private CameraManager cameraManager;
 
+    // Хранилище для начальных трансформаций объектов
+    private final Map<SceneObject, Transform> initialTransforms = new HashMap<>();
+
 
     private final RenderSettings renderSettings = new RenderSettings();
-    //private final List<SceneObject> sceneObjects = new ArrayList<>(); // Добавляем список объектов
+
     private final Scene scene = new Scene();
     private Texture currentTexture = null;
 
     private Model mesh = null;
-
-    /*private Camera camera = new Camera(
-            new Vector3(0, 0, 100),
-            new Vector3(0, 0, 0),
-            1.0F, 1, 0.01F, 100);*/
 
     private Timeline timeline;
 
@@ -902,6 +900,11 @@ public class GuiController {
 
             String objectName = file.getName().replace(".obj", "");
             SceneObject newObject = new SceneObject(objectName, mesh, currentTexture);
+
+            // Сохраняем начальную трансформацию (значения по умолчанию)
+            Transform initialTransform = new Transform();
+            initialTransforms.put(newObject, initialTransform);
+
             scene.addObject(newObject);
 
             newObject.setWireframeColor(Color.WHITE);
@@ -919,6 +922,76 @@ public class GuiController {
             System.err.println("Error loading model: " + exception.getMessage());
         }
     }
+
+    @FXML
+    private void onResetTranslationButtonClick() {
+        resetTransformComponent("перемещения", TransformComponent.TRANSLATION);
+    }
+
+    @FXML
+    private void onResetRotationButtonClick() {
+        resetTransformComponent("вращения", TransformComponent.ROTATION);
+    }
+
+    @FXML
+    private void onResetScaleButtonClick() {
+        resetTransformComponent("масштаба", TransformComponent.SCALE);
+    }
+
+    private void resetTransformComponent(String componentName, TransformComponent component) {
+        if (selectedObjects.isEmpty()) {
+            showAlert("Нет выделенных объектов", "Выберите объект для сброса " + componentName);
+            return;
+        }
+
+        for (SceneObject obj : selectedObjects) {
+            Transform initialTransform = initialTransforms.get(obj);
+            if (initialTransform != null && obj.getTransform() != null) {
+                Vector3 initialValue = getInitialVector(initialTransform, component);
+                setTransformComponent(obj.getTransform(), component, initialValue);
+            }
+        }
+
+        updateTransformSpinnersFromSelection();
+    }
+
+    private Vector3 getInitialVector(Transform transform, TransformComponent component) {
+        if (component == TransformComponent.TRANSLATION) {
+            return transform.getTranslation();
+        } else if (component == TransformComponent.ROTATION) {
+            return transform.getRotation();
+        } else {
+            return transform.getScale();
+        }
+    }
+
+    private void setTransformComponent(Transform transform, TransformComponent component, Vector3 value) {
+        if (component == TransformComponent.TRANSLATION) {
+            transform.setTranslation(value);
+        } else if (component == TransformComponent.ROTATION) {
+            transform.setRotation(value);
+        } else {
+            transform.setScale(value);
+        }
+    }
+
+    /*@FXML
+    private void onResetAllButtonClick(ActionEvent event) {
+        if (selectedObjects.isEmpty()) {
+            showAlert("Нет выделенных объектов", "Выберите объект для полного сброса");
+            return;
+        }
+
+        for (SceneObject obj : selectedObjects) {
+            Transform initialTransform = initialTransforms.get(obj);
+            if (initialTransform != null) {
+                // Полный сброс к начальному состоянию
+                obj.setTransform(new Transform());
+            }
+        }
+
+        updateTransformSpinnersFromSelection();
+    }*/
 
     @FXML
     private void onOpenTextureMenuItemClick() {

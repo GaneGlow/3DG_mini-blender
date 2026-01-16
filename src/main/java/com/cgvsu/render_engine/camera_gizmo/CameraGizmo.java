@@ -3,7 +3,7 @@ package com.cgvsu.render_engine.camera_gizmo;
 import com.cgvsu.model.Model;
 import com.cgvsu.render_engine.Camera;
 import com.cgvsu.render_engine.RenderSettings;
-import com.cgvsu.render_engine.SceneObject;
+import com.cgvsu.render_engine.scene.SceneObject;
 import javafx.scene.paint.Color;
 
 public class CameraGizmo extends SceneObject {

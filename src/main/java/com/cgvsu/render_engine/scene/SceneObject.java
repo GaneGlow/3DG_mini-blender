@@ -1,6 +1,9 @@
-package com.cgvsu.render_engine;
+package com.cgvsu.render_engine.scene;
 
 import com.cgvsu.model.Model;
+import com.cgvsu.render_engine.RenderSettings;
+import com.cgvsu.render_engine.Texture;
+import com.cgvsu.render_engine.Transform;
 import javafx.scene.paint.Color;
 
 public class SceneObject {

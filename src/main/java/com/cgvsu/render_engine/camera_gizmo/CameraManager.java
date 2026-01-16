@@ -3,6 +3,8 @@ package com.cgvsu.render_engine.camera_gizmo;
 import com.cgvsu.math.Vector3;
 import com.cgvsu.model.Model;
 import com.cgvsu.render_engine.*;
+import com.cgvsu.render_engine.scene.Scene;
+import com.cgvsu.render_engine.scene.SceneObject;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.control.Menu;

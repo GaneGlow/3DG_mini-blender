@@ -1,5 +1,6 @@
-package com.cgvsu.render_engine;
+package com.cgvsu.render_engine.scene;
 
+import com.cgvsu.render_engine.Camera;
 import com.cgvsu.render_engine.camera_gizmo.CameraGizmo;
 
 import java.util.ArrayList;

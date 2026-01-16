@@ -5,14 +5,14 @@ import com.cgvsu.model.Model;
 import com.cgvsu.model.Polygon;
 import com.cgvsu.rasterization.Rasterization;
 import com.cgvsu.rasterization.ZBuffer;
+import com.cgvsu.render_engine.scene.Scene;
+import com.cgvsu.render_engine.scene.SceneObject;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.PixelWriter;
 import javafx.scene.paint.Color;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.List;
-import java.util.ArrayList;
 
 import static com.cgvsu.rasterization.Rasterization.drawLineWithZBuffer;
 
