@@ -51,14 +51,45 @@ public class RenderEngine {
                 objectSettings = globalSettings;
             }
 
+            // Текстура объекта имеет приоритет над "глобальной" (если задана)
+            final Texture objectTexture = (sceneObject.getTexture() != null) ? sceneObject.getTexture() : texture;
+
+            // Модельная матрица из Transform объекта
+            final Matrix4 modelMatrix = getModelMatrix(sceneObject);
+
             // ПЕРВЫЙ ПРОХОД: Отрисовка треугольников с Z-буфером
-            renderTriangles(graphicsContext, camera, mesh, texture, objectSettings, baseColor, zBuffer, width, height);
+            renderTriangles(graphicsContext, camera, mesh, objectTexture, objectSettings, baseColor,
+                    modelMatrix, zBuffer, width, height);
 
             // ВТОРОЙ ПРОХОД: Отрисовка полигональной сетки (если нужно)
             if (objectSettings.drawWireframe) {
-                renderWireframe(graphicsContext, camera, mesh, wireframeColor, zBuffer, width, height);
+                renderWireframe(graphicsContext, camera, mesh, wireframeColor, modelMatrix, zBuffer, width, height);
             }
         }
+    }
+
+    /**
+     * Строит модельную матрицу для объекта сцены.
+     *
+     * Важно: GraphicConveyor работает с векторами-столбцами, поэтому используем
+     * M = T * R * S и далее в пайплайне P * V * M.
+     */
+    private static Matrix4 getModelMatrix(final SceneObject sceneObject) {
+        if (sceneObject == null || sceneObject.getTransform() == null) {
+            return GraphicConveyor.createModelMatrix(
+                    new Vector3(0, 0, 0),
+                    new Vector3(0, 0, 0),
+                    new Vector3(1, 1, 1)
+            );
+        }
+
+        final Transform t = sceneObject.getTransform();
+
+        final Vector3 translation = (t.getTranslation() != null) ? t.getTranslation() : new Vector3(0, 0, 0);
+        final Vector3 rotation = (t.getRotation() != null) ? t.getRotation() : new Vector3(0, 0, 0);
+        final Vector3 scale = (t.getScale() != null) ? t.getScale() : new Vector3(1, 1, 1);
+
+        return GraphicConveyor.createModelMatrix(translation, rotation, scale);
     }
 
     /**
@@ -71,16 +102,17 @@ public class RenderEngine {
             final Texture texture,
             final RenderSettings settings,
             final Color baseColor,
+            final Matrix4 modelMatrix,
             final ZBuffer zBuffer,
             final int width,
             final int height) {
 
         // Матрицы преобразования
-        Matrix4 modelMatrix = GraphicConveyor.rotateScaleTranslate();
-        Matrix4 viewMatrix = camera.getViewMatrix();
-        Matrix4 projectionMatrix = camera.getProjectionMatrix();
+        final Matrix4 viewMatrix = camera.getViewMatrix();
+        final Matrix4 projectionMatrix = camera.getProjectionMatrix();
 
-        Matrix4 modelViewProjectionMatrix = modelMatrix.multiply(viewMatrix).multiply(projectionMatrix);
+        // Для векторов-столбцов: v_clip = P * V * M * v
+        final Matrix4 modelViewProjectionMatrix = projectionMatrix.multiply(viewMatrix).multiply(modelMatrix);
 
         // Источник освещения (привязан к камере)
         Lighting.Light light = Lighting.createCameraLight(
@@ -89,7 +121,7 @@ public class RenderEngine {
         );
 
         // Матрица вида-модели для нормалей
-        Matrix4 modelViewMatrix = modelMatrix.multiply(viewMatrix);
+        final Matrix4 modelViewMatrix = viewMatrix.multiply(modelMatrix);
 
         // Проходим по всем полигонам (треугольникам)
         for (Polygon polygon : mesh.polygons) {
@@ -214,6 +246,7 @@ public class RenderEngine {
             final Camera camera,
             final Model mesh,
             final Color wireframeColor,
+            final Matrix4 modelMatrix,
             final ZBuffer zBuffer,
             final int width,
             final int height) {
@@ -223,10 +256,11 @@ public class RenderEngine {
         lineZBuffer.clear();
 
         // Матрицы преобразования
-        Matrix4 modelMatrix = GraphicConveyor.rotateScaleTranslate();
-        Matrix4 viewMatrix = camera.getViewMatrix();
-        Matrix4 projectionMatrix = camera.getProjectionMatrix();
-        Matrix4 modelViewProjectionMatrix = modelMatrix.multiply(viewMatrix).multiply(projectionMatrix);
+        final Matrix4 viewMatrix = camera.getViewMatrix();
+        final Matrix4 projectionMatrix = camera.getProjectionMatrix();
+
+        // Для векторов-столбцов: v_clip = P * V * M * v
+        final Matrix4 modelViewProjectionMatrix = projectionMatrix.multiply(viewMatrix).multiply(modelMatrix);
 
         // Множество для хранения уникальных ВИДИМЫХ ребер
         Set<Edge> visibleEdges = new HashSet<>();

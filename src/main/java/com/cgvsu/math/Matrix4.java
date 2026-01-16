@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.Objects;
 
 public final class Matrix4 {
-    private final float[][] m;
+    public final float[][] m;
     private static final float EPS = 1e-7f;
 
     public Matrix4(float[][] values) {

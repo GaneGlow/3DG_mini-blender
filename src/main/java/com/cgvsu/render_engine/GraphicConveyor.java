@@ -1,72 +1,225 @@
 package com.cgvsu.render_engine;
 
-import com.cgvsu.math.Matrix4;
-import com.cgvsu.math.Point2;
-import com.cgvsu.math.Vector3;
+import com.cgvsu.math.*;
 
 public class GraphicConveyor {
-    public static Matrix4 rotateScaleTranslate() {
-        float[][] matrix = new float[][]{
-                {1, 0, 0, 0},
-                {0, 1, 0, 0},
-                {0, 0, 1, 0},
-                {0, 0, 0, 1}
-        };
-        return new Matrix4(matrix);
+
+    /**
+     * Видовая матрица (lookAt) для векторов-столбцов:
+     * v_camera = V * v_world.
+     */
+    public static Matrix4 lookAt(final Vector3 eye, final Vector3 target) {
+        return lookAt(eye, target, new Vector3(0F, 1.0F, 0F));
     }
 
-    public static Matrix4 lookAt(Vector3 eye, Vector3 target) {
-        return lookAt(eye, target, new Vector3(0.0f, 1.0f, 0.0f));
+    /**
+     * Видовая матрица (lookAt) для векторов-столбцов:
+     * v_camera = V * v_world.
+     * Формула соответствует теории:
+     * z = target - eye;
+     * x = up × z;
+     * y = z × x;
+     * V = [ x^T  -x·eye
+     *       y^T  -y·eye
+     *       z^T  -z·eye
+     *       0 0 0 1 ]
+     */
+    public static Matrix4 lookAt(final Vector3 eye, final Vector3 target, final Vector3 up) {
+        // z = target - eye
+        Vector3 z = target.subtract(eye);
+        z = z.normalized();
+
+        // x = up × z
+        Vector3 x = up.cross(z);
+        x = x.normalized();
+
+        // y = z × x
+        Vector3 y = z.cross(x);
+        y = y.normalized();
+
+        // Создаем матрицу 4x4
+        float[][] values = new float[4][4];
+
+        // Первая строка (x)
+        values[0][0] = x.x;
+        values[0][1] = x.y;
+        values[0][2] = x.z;
+        values[0][3] = -x.dot(eye);
+
+        // Вторая строка (y)
+        values[1][0] = y.x;
+        values[1][1] = y.y;
+        values[1][2] = y.z;
+        values[1][3] = -y.dot(eye);
+
+        // Третья строка (z)
+        values[2][0] = z.x;
+        values[2][1] = z.y;
+        values[2][2] = z.z;
+        values[2][3] = -z.dot(eye);
+
+        // Четвертая строка
+        values[3][0] = 0;
+        values[3][1] = 0;
+        values[3][2] = 0;
+        values[3][3] = 1;
+
+        return new Matrix4(values);
     }
 
-    public static Matrix4 lookAt(Vector3 eye, Vector3 target, Vector3 up) {
-        Vector3 zAxis = target.subtract(eye).normalized();
-        Vector3 xAxis = up.cross(zAxis).normalized();
-        Vector3 yAxis = zAxis.cross(xAxis);
-
-        float[][] matrix = new float[][]{
-                {xAxis.x, yAxis.x, zAxis.x, 0},
-                {xAxis.y, yAxis.y, zAxis.y, 0},
-                {xAxis.z, yAxis.z, zAxis.z, 0},
-                {-xAxis.dot(eye), -yAxis.dot(eye), -zAxis.dot(eye), 1}
-        };
-
-        return new Matrix4(matrix);
-    }
-
+    /**
+     * Матрица перспективной проекции под векторы-столбцы.
+     *
+     * Важно: в этой реализации w' = z,
+     * т.е. после умножения обязательно деление на w.
+     */
     public static Matrix4 perspective(
             final float fov,
             final float aspectRatio,
             final float nearPlane,
             final float farPlane) {
-        float tanHalfFov = (float)(1.0 / Math.tan(fov * 0.5));
-        float range = farPlane - nearPlane;
+        float[][] values = new float[4][4];
 
-        float[][] matrix = new float[][]{
-                {tanHalfFov / aspectRatio, 0, 0, 0},
-                {0, tanHalfFov, 0, 0},
-                {0, 0, -(farPlane + nearPlane) / range, -1},
-                {0, 0, -2 * farPlane * nearPlane / range, 0}
-        };
-        return new Matrix4(matrix);
+        final float f = (float) (1.0F / Math.tan(fov * 0.5F));
+
+        // Инициализация нулями
+        for (int i = 0; i < 4; i++) {
+            for (int j = 0; j < 4; j++) {
+                values[i][j] = 0;
+            }
+        }
+
+        // Проекция x и y
+        values[0][0] = f / aspectRatio;
+        values[1][1] = f;
+
+        // Проекция z в диапазон [-1, 1] при w' = z
+        values[2][2] = (farPlane + nearPlane) / (farPlane - nearPlane);
+        values[2][3] = 2.0F * (nearPlane * farPlane) / (nearPlane - farPlane);
+
+        // w' = z
+        values[3][2] = 1.0F;
+        values[3][3] = 0.0F;
+
+        return new Matrix4(values);
     }
 
     public static Vector3 multiplyMatrix4ByVector3(final Matrix4 matrix, final Vector3 vertex) {
-        float x = vertex.x * matrix.get(0, 0) + vertex.y * matrix.get(1, 0) + vertex.z * matrix.get(2, 0) + matrix.get(3, 0);
-        float y = vertex.x * matrix.get(0, 1) + vertex.y * matrix.get(1, 1) + vertex.z * matrix.get(2, 1) + matrix.get(3, 1);
-        float z = vertex.x * matrix.get(0, 2) + vertex.y * matrix.get(1, 2) + vertex.z * matrix.get(2, 2) + matrix.get(3, 2);
-        float w = vertex.x * matrix.get(0, 3) + vertex.y * matrix.get(1, 3) + vertex.z * matrix.get(2, 3) + matrix.get(3, 3);
+        // Создаем вектор 4D (w=1 для точек)
+        Vector4 vertex4 = new Vector4(vertex.x, vertex.y, vertex.z, 1.0f);
 
-        if (Math.abs(w) > 1e-7f) {
-            return new Vector3(x / w, y / w, z / w);
+        // Умножаем матрицу на вектор
+        Vector4 result4 = matrix.multiply(vertex4);
+
+        // Если w == 0, точка находится на плоскости камеры
+        if (Math.abs(result4.w) < 1e-7f) {
+            return new Vector3(Float.NaN, Float.NaN, Float.NaN);
         }
-        return new Vector3(x, y, z);
+
+        // Перспективное деление
+        return new Vector3(
+                result4.x / result4.w,
+                result4.y / result4.w,
+                result4.z / result4.w
+        );
     }
 
     public static Point2 vertexToPoint(final Vector3 vertex, final int width, final int height) {
+        // Переход из NDC [-1..1] в экранные координаты:
+        // x_screen = (x_ndc + 1) * w/2
+        // y_screen = (1 - y_ndc) * h/2
         return new Point2(
-                vertex.x * width / 2.0f + width / 2.0f,
-                -vertex.y * height / 2.0f + height / 2.0f
-        );
+                (vertex.x * width * 0.5F) + width * 0.5F,
+                (-vertex.y * height * 0.5F) + height * 0.5F);
+    }
+
+    // Матрица перемещения
+    public static Matrix4 createTranslationMatrix(Vector3 translation) {
+        float[][] values = Matrix4.identity().m; // Копируем единичную матрицу
+
+        values[0][3] = translation.x;
+        values[1][3] = translation.y;
+        values[2][3] = translation.z;
+
+        return new Matrix4(values);
+    }
+
+    // Матрица масштабирования
+    public static Matrix4 createScaleMatrix(Vector3 scale) {
+        float[][] values = new float[4][4];
+
+        for (int i = 0; i < 4; i++) {
+            for (int j = 0; j < 4; j++) {
+                values[i][j] = 0;
+            }
+        }
+
+        values[0][0] = scale.x;
+        values[1][1] = scale.y;
+        values[2][2] = scale.z;
+        values[3][3] = 1.0f;
+
+        return new Matrix4(values);
+    }
+
+    public static Matrix4 createRotationXMatrix(float angle) {
+        final float cos = (float) Math.cos(angle);
+        final float sin = (float) Math.sin(angle);
+
+        float[][] values = Matrix4.identity().m;
+
+        values[1][1] = cos;
+        values[1][2] = -sin;
+        values[2][1] = sin;
+        values[2][2] = cos;
+
+        return new Matrix4(values);
+    }
+
+    public static Matrix4 createRotationYMatrix(float angle) {
+        final float cos = (float) Math.cos(angle);
+        final float sin = (float) Math.sin(angle);
+
+        float[][] values = Matrix4.identity().m;
+
+        values[0][0] = cos;
+        values[0][2] = sin;
+        values[2][0] = -sin;
+        values[2][2] = cos;
+
+        return new Matrix4(values);
+    }
+
+    public static Matrix4 createRotationZMatrix(float angle) {
+        final float cos = (float) Math.cos(angle);
+        final float sin = (float) Math.sin(angle);
+
+        float[][] values = Matrix4.identity().m;
+
+        values[0][0] = cos;
+        values[0][1] = -sin;
+        values[1][0] = sin;
+        values[1][1] = cos;
+
+        return new Matrix4(values);
+    }
+
+    public static Matrix4 createModelMatrix(Vector3 translation, Vector3 rotation, Vector3 scale) {
+        final Matrix4 scaleMatrix = createScaleMatrix(scale);
+
+        // Поворот (X → Y → Z) для векторов-столбцов:
+        // v' = (Rz * Ry * Rx) * v, т.е. фактически применяется Rx, затем Ry, затем Rz.
+        final Matrix4 rotX = createRotationXMatrix(rotation.x);
+        final Matrix4 rotY = createRotationYMatrix(rotation.y);
+        final Matrix4 rotZ = createRotationZMatrix(rotation.z);
+
+        // R = Rz * Ry * Rx
+        Matrix4 rotationMatrix = rotZ.multiply(rotY).multiply(rotX);
+
+        // Перемещение
+        final Matrix4 translationMatrix = createTranslationMatrix(translation);
+
+        // M = T * R * S
+        return translationMatrix.multiply(rotationMatrix).multiply(scaleMatrix);
     }
 }
