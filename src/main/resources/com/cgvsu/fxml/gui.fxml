@@ -59,7 +59,6 @@
                 <CheckBox fx:id="lightingCheckBox" text="Использовать освещение" styleClass="check-box"/>
 
                 <CheckBox fx:id="polygonCheckBox" text="Выделять полигоны" styleClass="check-box"/>
-                <CheckBox fx:id="vertexCheckBox" text="Выделять вершины" styleClass="check-box"/>
 
                 <Button fx:id="deleteSelectedButton"
                         text="Удалить"
