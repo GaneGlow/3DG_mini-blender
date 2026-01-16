@@ -406,11 +406,79 @@ public class GuiController {
 
     @FXML
     private void onDeleteSelectedButtonClick(ActionEvent event) {
-        guiButtons.onDeleteSelectedButtonClick(event, selectedObjects, modelsListView, hoveredObject);
-        if (hoveredObject != null && selectedObjects.contains(hoveredObject)) {
-            hoveredObject = null;
+        if (selectedObjects.isEmpty()) {
+            // Нет выделенных объектов - ничего не делаем
+            return;
         }
-        guiMethods.updateModelInfoLabel();
+
+        // Сценарий 1: Удаление выделенных моделей (если нет выделенных полигонов)
+        if (selectedPolygons.isEmpty()) {
+            // Вызываем существующий метод удаления моделей
+            guiButtons.onDeleteSelectedButtonClick(event, selectedObjects, modelsListView, hoveredObject);
+
+            // Очищаем состояние после удаления
+            if (hoveredObject != null && selectedObjects.contains(hoveredObject)) {
+                hoveredObject = null;
+            }
+            guiMethods.updateModelInfoLabel();
+            return;
+        }
+
+        // Сценарий 2: Удаление выделенных полигонов
+        Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmation.setTitle("Удаление полигонов");
+        confirmation.setHeaderText("Удалить выделенные полигоны?");
+        confirmation.setContentText("Вы собираетесь удалить " + selectedPolygons.size() +
+                " полигон(ов).");
+
+        ButtonType deleteButton = new ButtonType("Удалить", ButtonBar.ButtonData.OK_DONE);
+        ButtonType cancelButton = new ButtonType("Отмена", ButtonBar.ButtonData.CANCEL_CLOSE);
+        confirmation.getButtonTypes().setAll(deleteButton, cancelButton);
+
+        Optional<ButtonType> result = confirmation.showAndWait();
+
+        if (result.isPresent() && result.get() == deleteButton) {
+            // Группируем полигоны по объектам
+            Map<SceneObject, List<Integer>> polygonsToRemoveByObject = new HashMap<>();
+
+            for (PolygonSelection selection : selectedPolygons) {
+                SceneObject object = selection.getObject();
+                Model model = object.getModel();
+
+                if (model != null) {
+                    // Находим индекс полигона в модели
+                    int polygonIndex = model.polygons.indexOf(selection.getPolygon()) + 1;
+                    if (polygonIndex > 0) {
+                        polygonsToRemoveByObject
+                                .computeIfAbsent(object, k -> new ArrayList<>())
+                                .add(polygonIndex);
+                    }
+                }
+            }
+
+            // Удаляем полигоны из каждого объекта
+            for (Map.Entry<SceneObject, List<Integer>> entry : polygonsToRemoveByObject.entrySet()) {
+                SceneObject object = entry.getKey();
+                Model model = object.getModel();
+                List<Integer> polygonIndices = entry.getValue();
+
+                model.removePolygons(
+                        new ArrayList<>(polygonIndices),
+                        model.vertices,
+                        model.textureVertices,
+                        model.normals,
+                        model.polygons,
+                        true  // удалить неиспользуемые вершины
+                );
+            }
+
+            // Очищаем список выделенных полигонов
+            selectedPolygons.clear();
+
+            // Обновляем отображение
+            renderFrame();
+            guiButtons.showAlert("Удаление", "Полигоны успешно удалены!");
+        }
     }
 
     @FXML

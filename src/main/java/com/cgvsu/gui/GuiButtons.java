@@ -174,7 +174,7 @@ public class GuiButtons {
         confirmation.setTitle("Удаление объектов");
         confirmation.setHeaderText("Удалить выбранные объекты?");
         confirmation.setContentText("Вы собираетесь удалить " + selectedObjects.size() +
-                " объект(ов).\nЭто действие нельзя отменить.");
+                " объект(ов).");
 
         ButtonType deleteButton = new ButtonType("Удалить", ButtonBar.ButtonData.OK_DONE);
         ButtonType cancelButton = new ButtonType("Отмена", ButtonBar.ButtonData.CANCEL_CLOSE);
@@ -190,7 +190,7 @@ public class GuiButtons {
             guiMethods.updateUIFromSelectedObjects();
             guiMethods.updateModelInfoLabel();
 
-            showAlert("Объекты удалены", "Удалено " + selectedObjects.size() + " объект(ов).");
+            showAlert("Удаление", "Модели успешно удалены!");
         }
     }
 
@@ -224,7 +224,7 @@ public class GuiButtons {
         }
     }
 
-    private void showAlert(String title, String message) {
+    void showAlert(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle(title);
         alert.setHeaderText(null);

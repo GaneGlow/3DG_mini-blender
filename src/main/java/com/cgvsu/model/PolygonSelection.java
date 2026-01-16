@@ -34,4 +34,8 @@ public class PolygonSelection {
     public int hashCode() {
         return 31 * sceneObject.hashCode() + polygon.hashCode();
     }
+
+    public SceneObject getObject() {
+        return sceneObject;
+    }
 }
