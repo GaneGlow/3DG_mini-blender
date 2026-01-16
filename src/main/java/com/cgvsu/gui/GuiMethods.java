@@ -148,7 +148,7 @@ public class GuiMethods {
         double deltaY = event.getY() - lastMouseY;
 
         if (event.getButton() == MouseButton.SECONDARY) {
-            // Вращение
+            // Вращение применяется ко всем выделенным объектам
             float rotationSpeed = 0.1f;
             float rotY = (float) (deltaX * rotationSpeed);
             float rotX = (float) (deltaY * rotationSpeed);
@@ -160,7 +160,7 @@ public class GuiMethods {
                 }
             }
         } else if (event.getButton() == MouseButton.PRIMARY) {
-            // Перемещение
+            // Перемещение применяется ко всем выделенным объектам
             float moveSpeed = 0.1f;
             float moveX = (float) (-deltaX * moveSpeed);
             float moveY = (float) (-deltaY * moveSpeed);
@@ -302,27 +302,46 @@ public class GuiMethods {
                 return;
             }
 
-            SceneObject active = selectedObjects.get(selectedObjects.size() - 1);
-            Transform t = (active != null) ? active.getTransform() : null;
+            // Для нескольких выделенных объектов показываем средние значения
+            Vector3 avgTranslation = new Vector3(0, 0, 0);
+            Vector3 avgRotation = new Vector3(0, 0, 0);
+            Vector3 avgScale = new Vector3(0, 0, 0);
 
-            Vector3 tr = (t != null && t.getTranslation() != null) ?
-                    t.getTranslation() : new Vector3(0, 0, 0);
-            Vector3 rot = (t != null && t.getRotation() != null) ?
-                    t.getRotation() : new Vector3(0, 0, 0);
-            Vector3 sc = (t != null && t.getScale() != null) ?
-                    t.getScale() : new Vector3(1, 1, 1);
+            int count = 0;
 
-            setSpinnerValue(controller.getTranslationXSpinner(), tr.x);
-            setSpinnerValue(controller.getTranslationYSpinner(), tr.y);
-            setSpinnerValue(controller.getTranslationZSpinner(), tr.z);
+            for (SceneObject obj : selectedObjects) {
+                Transform t = obj.getTransform();
+                if (t != null) {
+                    if (t.getTranslation() != null) {
+                        avgTranslation = avgTranslation.add(t.getTranslation());
+                    }
+                    if (t.getRotation() != null) {
+                        avgRotation = avgRotation.add(t.getRotation());
+                    }
+                    if (t.getScale() != null) {
+                        avgScale = avgScale.add(t.getScale());
+                    }
+                    count++;
+                }
+            }
 
-            setSpinnerValue(controller.getRotationXSpinner(), Math.toDegrees(rot.x));
-            setSpinnerValue(controller.getRotationYSpinner(), Math.toDegrees(rot.y));
-            setSpinnerValue(controller.getRotationZSpinner(), Math.toDegrees(rot.z));
+            if (count > 0) {
+                avgTranslation = avgTranslation.divide(count);
+                avgRotation = avgRotation.divide(count);
+                avgScale = avgScale.divide(count);
 
-            setSpinnerValue(controller.getScaleXSpinner(), sc.x);
-            setSpinnerValue(controller.getScaleYSpinner(), sc.y);
-            setSpinnerValue(controller.getScaleZSpinner(), sc.z);
+                setSpinnerValue(controller.getTranslationXSpinner(), avgTranslation.x);
+                setSpinnerValue(controller.getTranslationYSpinner(), avgTranslation.y);
+                setSpinnerValue(controller.getTranslationZSpinner(), avgTranslation.z);
+
+                setSpinnerValue(controller.getRotationXSpinner(), Math.toDegrees(avgRotation.x));
+                setSpinnerValue(controller.getRotationYSpinner(), Math.toDegrees(avgRotation.y));
+                setSpinnerValue(controller.getRotationZSpinner(), Math.toDegrees(avgRotation.z));
+
+                setSpinnerValue(controller.getScaleXSpinner(), avgScale.x);
+                setSpinnerValue(controller.getScaleYSpinner(), avgScale.y);
+                setSpinnerValue(controller.getScaleZSpinner(), avgScale.z);
+            }
         } finally {
             controller.setUpdatingTransformUI(false);
         }
@@ -418,10 +437,6 @@ public class GuiMethods {
             for (SceneObject obj : selectedObjects) {
                 obj.applyRenderSettings(currentUISettings);
             }
-        } else {
-            for (SceneObject obj : scene.getObjects()) {
-                obj.resetRenderSettings();
-            }
         }
     }
 
@@ -479,6 +494,7 @@ public class GuiMethods {
                 return;
             }
 
+            // Применяем изменения ко всем выделенным объектам
             for (SceneObject obj : selectedObjects) {
                 Transform t = ensureTransform(obj);
                 if (t != null) {
@@ -649,13 +665,14 @@ public class GuiMethods {
         });
     }
 
+    // В методе applyTransformDelta замените цикл for для всех TransformKind
     private void applyTransformDelta(
             final TransformKind kind,
             final Axis axis,
             final double oldValue,
             final double newValue
     ) {
-        // Применяем изменения к выбранным объектам
+        // Применяем изменения ко ВСЕМ выбранным объектам
         switch (kind) {
             case TRANSLATION: {
                 final float d = (float) (newValue - oldValue);
@@ -680,7 +697,6 @@ public class GuiMethods {
                 break;
             }
             case ROTATION: {
-                // В UI градусы, в Transform радианы.
                 final float dRad = (float) Math.toRadians(newValue - oldValue);
                 for (SceneObject obj : selectedObjects) {
                     Transform t = ensureTransform(obj);
@@ -703,7 +719,6 @@ public class GuiMethods {
                 break;
             }
             case SCALE: {
-                // Масштабирование уже работает, оставляем как есть
                 final double EPS = 1e-9;
                 final boolean oldIsZero = Math.abs(oldValue) < EPS;
 
@@ -729,7 +744,7 @@ public class GuiMethods {
                 break;
             }
         }
-        // Разрешаем обновление UI на время
+        // Обновляем UI после применения изменений ко всем объектам
         controller.setUpdatingTransformUI(true);
         try {
             updateTransformSpinnersFromSelection();

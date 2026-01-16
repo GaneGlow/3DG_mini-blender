@@ -92,8 +92,6 @@ public class GuiButtons {
         try {
             Image image = new Image(file.toURI().toString());
             Texture texture = new Texture(image);
-            renderSettings.useTexture = true;
-            controller.getTextureCheckBox().setSelected(true);
 
             String textureInfo = String.format("Текстура: %s (%dx%d)",
                     file.getName(),
@@ -132,10 +130,19 @@ public class GuiButtons {
         }
 
         for (SceneObject obj : selectedObjects) {
-            Transform initialTransform = initialTransforms.get(obj);
-            if (initialTransform != null && obj.getTransform() != null) {
-                Vector3 initialValue = getInitialVector(initialTransform, component);
-                setTransformComponent(obj.getTransform(), component, initialValue);
+            Transform currentTransform = obj.getTransform();
+            if (currentTransform == null) {
+                currentTransform = new Transform();
+                obj.setTransform(currentTransform);
+            }
+
+            // Сбрасываем значение компонента к начальному значению
+            if (component == TransformComponent.TRANSLATION) {
+                currentTransform.setTranslation(new Vector3(0, 0, 0));
+            } else if (component == TransformComponent.ROTATION) {
+                currentTransform.setRotation(new Vector3(0, 0, 0));
+            } else if (component == TransformComponent.SCALE) {
+                currentTransform.setScale(new Vector3(1, 1, 1));
             }
         }
 

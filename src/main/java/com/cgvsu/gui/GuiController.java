@@ -77,14 +77,11 @@ public class GuiController {
     private final RenderSettings renderSettings = new RenderSettings();
     private final List<SceneObject> selectedObjects = new ArrayList<>();
     private SceneObject hoveredObject = null;
-    private Model mesh = null;
     private Texture currentTexture = null;
     private boolean isLeftMousePressed = false;
     private boolean isRightMousePressed = false;
     private double lastMouseX;
     private double lastMouseY;
-
-    // Новые поля из второго файла
     private int mouseX = 0;
     private int mouseY = 0;
     /**
@@ -92,9 +89,6 @@ public class GuiController {
      * не вызывало применение трансформаций через слушатели.
      */
     private boolean updatingTransformUI = false;
-
-    private enum Axis { X, Y, Z }
-    private enum TransformKind { TRANSLATION, ROTATION, SCALE }
 
     @FXML
     private void initialize() {
@@ -147,6 +141,34 @@ public class GuiController {
         guiMethods.updateModelInfoLabel();
 
         setupPolygonCheckBox();
+
+        setupModelsListViewListener();
+    }
+
+    private void setupModelsListViewListener() {
+        modelsListView.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal != null) {
+                // Обновляем текущую текстуру в соответствии с выбранной моделью
+                Texture modelTexture = newVal.getTexture();
+                if (modelTexture != null) {
+                    currentTexture = modelTexture;
+                    updateTextureInfoLabel(newVal);
+                } else {
+                    currentTexture = null;
+                    textureInfoLabel.setText("Текстура не загружена");
+                }
+            }
+        });
+    }
+
+    private void updateTextureInfoLabel(SceneObject object) {
+        if (object != null && object.getTexture() != null) {
+            Texture tex = object.getTexture();
+            // Здесь можно добавить информацию о текстуре
+            textureInfoLabel.setText("Текстура: загружена");
+        } else {
+            textureInfoLabel.setText("Текстура не загружена");
+        }
     }
 
     private void setupPolygonCheckBox() {
@@ -377,9 +399,36 @@ public class GuiController {
 
     @FXML
     private void onOpenTextureMenuItemClick() {
+        if (selectedObjects.isEmpty()) {
+            guiButtons.showAlert("Нет выделенной модели", "Пожалуйста, выберите модель для загрузки текстуры.");
+            return;
+        }
+
+        // Берем только первый выделенный объект для загрузки текстуры
+        SceneObject targetObject = selectedObjects.get(0);
+
         Texture loadedTexture = guiButtons.onOpenTextureMenuItemClick(canvas, textureInfoLabel);
         if (loadedTexture != null) {
-            currentTexture = loadedTexture;
+            // Применяем текстуру ТОЛЬКО к выбранному объекту
+            targetObject.setTexture(loadedTexture);
+
+            // Включаем использование текстуры для объекта
+            if (targetObject.getRenderSettings() == null) {
+                targetObject.setRenderSettings(new RenderSettings());
+            }
+            targetObject.getRenderSettings().useTexture = true;
+
+            // Обновляем текущую текстуру только для этого объекта
+            // (не меняем общую текстуру контроллера)
+            updateTextureInfoLabel(targetObject);
+
+            // Убедимся, что чекбокс текстуры включен для этого объекта
+            if (selectedObjects.size() == 1) {
+                textureCheckBox.setSelected(true);
+            }
+
+            // Обновляем отображение
+            renderFrame();
         }
     }
 
