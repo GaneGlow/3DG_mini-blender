@@ -334,13 +334,6 @@ public class GuiController {
             }
 
             applyTransformDelta(kind, axis, oldValue, newValue);
-
-            // Обновляем цвета объектов (это вызовет перерисовку в следующем кадре)
-            updateObjectColors();
-
-            // Если нужно немедленное обновление, можно принудительно перерисовать один кадр
-            // canvas.getGraphicsContext2D().clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
-            // renderFrame();
         });
     }
 
@@ -350,66 +343,82 @@ public class GuiController {
             final double oldValue,
             final double newValue
     ) {
-
         switch (kind) {
             case TRANSLATION: {
                 final float d = (float) (newValue - oldValue);
                 for (SceneObject obj : selectedObjects) {
                     Transform t = ensureTransform(obj);
-                    if (t == null) continue;
+                    if (t == null) {
+                        continue;
+                    }
 
                     switch (axis) {
-                        case X: t.translate(d, 0, 0); break;
-                        case Y: t.translate(0, d, 0); break;
-                        case Z: t.translate(0, 0, d); break;
+                        case X:
+                            t.translate(d, 0, 0);
+                            break;
+                        case Y:
+                            t.translate(0, d, 0);
+                            break;
+                        case Z:
+                            t.translate(0, 0, d);
+                            break;
                     }
                 }
                 break;
             }
             case ROTATION: {
+                // В UI градусы, в Transform радианы.
                 final float dRad = (float) Math.toRadians(newValue - oldValue);
                 for (SceneObject obj : selectedObjects) {
                     Transform t = ensureTransform(obj);
-                    if (t == null) continue;
+                    if (t == null) {
+                        continue;
+                    }
 
                     switch (axis) {
-                        case X: t.rotate(dRad, 0, 0); break;
-                        case Y: t.rotate(0, dRad, 0); break;
-                        case Z: t.rotate(0, 0, dRad); break;
+                        case X:
+                            t.rotate(dRad, 0, 0);
+                            break;
+                        case Y:
+                            t.rotate(0, dRad, 0);
+                            break;
+                        case Z:
+                            t.rotate(0, 0, dRad);
+                            break;
                     }
                 }
                 break;
             }
             case SCALE: {
+                // Старайтесь работать как с "коэффициентом" масштаба.
+                // Для корректной групповой операции применяем множитель = new/old.
                 final double EPS = 1e-9;
                 final boolean oldIsZero = Math.abs(oldValue) < EPS;
 
                 if (oldIsZero) {
+                    // Если старое значение 0, делить нельзя. В этом случае считаем,
+                    // что пользователь задаёт абсолютное значение компоненты масштаба.
                     final float absolute = (float) newValue;
                     for (SceneObject obj : selectedObjects) {
                         Transform t = ensureTransform(obj);
-                        if (t == null) continue;
+                        if (t == null) {
+                            continue;
+                        }
                         setScaleComponent(t, axis, absolute);
                     }
                 } else {
                     final float factor = (float) (newValue / oldValue);
                     for (SceneObject obj : selectedObjects) {
                         Transform t = ensureTransform(obj);
-                        if (t == null) continue;
+                        if (t == null) {
+                            continue;
+                        }
                         multiplyScaleComponent(t, axis, factor);
                     }
-
                 }
                 break;
-
             }
         }
-
-        // ВАЖНО: Нужно обновить спиннеры, чтобы они отображали актуальные значения
-        updateTransformSpinnersFromSelection();
-
-        // Обновляем цвета для перерисовки
-        updateObjectColors();
     }
 
     private Transform ensureTransform(final SceneObject obj) {
