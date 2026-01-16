@@ -294,4 +294,72 @@ public class CameraManager {
     public int getCameraCount() {
         return scene.getCameras().size();
     }
+
+    public void updateCamerasFromGizmos() {
+        final float CAMERA_OFFSET = 50f; // подбери: 30–100
+
+        for (SceneObject obj : scene.getObjects()) {
+            if (!(obj instanceof CameraGizmo gizmo)) {
+                continue;
+            }
+
+            Camera cam = gizmo.getCamera();
+
+            Vector3 gizmoPos = gizmo.getTransform().getTranslation();
+            Vector3 target = cam.getTarget();
+
+            // направление взгляда камеры
+            Vector3 dir = new Vector3(
+                    target.x - gizmoPos.x,
+                    target.y - gizmoPos.y,
+                    target.z - gizmoPos.z
+            );
+
+            float len = (float) Math.sqrt(
+                    dir.x * dir.x +
+                            dir.y * dir.y +
+                            dir.z * dir.z
+            );
+
+            // если направление вырождено — просто ставим рядом
+            if (len < 1e-6f) {
+                cam.setPosition(new Vector3(
+                        gizmoPos.x,
+                        gizmoPos.y,
+                        gizmoPos.z + CAMERA_OFFSET
+                ));
+                continue;
+            }
+
+            // нормализация
+            dir.x /= len;
+            dir.y /= len;
+            dir.z /= len;
+
+            // 📌 камера ВПЕРЁД от gizmo
+            cam.setPosition(new Vector3(
+                    gizmoPos.x + dir.x * CAMERA_OFFSET,
+                    gizmoPos.y + dir.y * CAMERA_OFFSET,
+                    gizmoPos.z + dir.z * CAMERA_OFFSET
+            ));
+        }
+    }
+
+
+
+    private void applyGizmoTransformToCamera(Camera camera) {
+        for (SceneObject obj : scene.getObjects()) {
+            if (obj instanceof CameraGizmo gizmo &&
+                    gizmo.getCamera() == camera) {
+
+                Vector3 p = gizmo.getTransform().getTranslation();
+
+                camera.setPosition(new Vector3(p.x, p.y, p.z));
+                return;
+            }
+        }
+    }
+
+
+
 }
