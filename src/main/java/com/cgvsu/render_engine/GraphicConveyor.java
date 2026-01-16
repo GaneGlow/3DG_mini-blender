@@ -104,6 +104,11 @@ public class GraphicConveyor {
         return new Matrix4(values);
     }
 
+    public static Vector4 multiplyMatrix4ByVector4(final Matrix4 matrix, final Vector3 vertex) {
+        Vector4 v4 = new Vector4(vertex.x, vertex.y, vertex.z, 1.0f);
+        return matrix.multiply(v4); // ВАЖНО: без деления на w
+    }
+
     public static Vector3 multiplyMatrix4ByVector3(final Matrix4 matrix, final Vector3 vertex) {
         // Создаем вектор 4D (w=1 для точек)
         Vector4 vertex4 = new Vector4(vertex.x, vertex.y, vertex.z, 1.0f);

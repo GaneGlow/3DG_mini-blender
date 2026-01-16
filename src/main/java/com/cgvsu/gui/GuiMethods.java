@@ -441,7 +441,7 @@ public class GuiMethods {
 
         for (Spinner<Double> spinner : rotationSpinners) {
             if (spinner != null) {
-                setupDoubleSpinner(spinner, -360.0, 360.0, 0.1, 0.0);
+                setupDoubleSpinner(spinner, -360.0, 360.0, 0.7, 0.0);
                 addSpinnerListener(spinner, TransformComponent.ROTATION, selectedObjects);
             }
         }
