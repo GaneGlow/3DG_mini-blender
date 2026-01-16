@@ -25,6 +25,9 @@ public class GuiMethods {
     private final List<SceneObject> selectedObjects;
     private boolean updatingTransformUI = false;
 
+    private enum Axis { X, Y, Z }
+    private enum TransformKind { TRANSLATION, ROTATION, SCALE }
+
     public GuiMethods(GuiController controller, Scene scene, RenderSettings renderSettings,
                       List<SceneObject> selectedObjects) {
         this.controller = controller;
@@ -81,6 +84,10 @@ public class GuiMethods {
 
     private void handleListViewSelection(SceneObject selectedObject) {
         if (isCameraObject(selectedObject)) return;
+
+        if (controller != null) {
+            controller.clearSelectedPolygons();
+        }
 
         selectedObjects.clear();
         selectedObjects.add(selectedObject);
@@ -142,7 +149,7 @@ public class GuiMethods {
 
         if (event.getButton() == MouseButton.SECONDARY) {
             // Вращение
-            float rotationSpeed = 0.01f;
+            float rotationSpeed = 0.1f;
             float rotY = (float) (deltaX * rotationSpeed);
             float rotX = (float) (deltaY * rotationSpeed);
 
@@ -288,7 +295,7 @@ public class GuiMethods {
     }
 
     public void updateTransformSpinnersFromSelection() {
-        updatingTransformUI = true;
+        controller.setUpdatingTransformUI(true);
         try {
             if (selectedObjects.isEmpty()) {
                 resetSpinnersToDefault();
@@ -317,7 +324,7 @@ public class GuiMethods {
             setSpinnerValue(controller.getScaleYSpinner(), sc.y);
             setSpinnerValue(controller.getScaleZSpinner(), sc.z);
         } finally {
-            updatingTransformUI = false;
+            controller.setUpdatingTransformUI(false);
         }
     }
 
@@ -418,7 +425,7 @@ public class GuiMethods {
         }
     }
 
-    public void setupTransformSpinners(
+    public void setupSpinners(
             List<Spinner<Double>> translationSpinners,
             List<Spinner<Double>> rotationSpinners,
             List<Spinner<Double>> scaleSpinners,
@@ -464,7 +471,7 @@ public class GuiMethods {
     private void addSpinnerListener(Spinner<Double> spinner, TransformComponent component,
                                     List<SceneObject> selectedObjects) {
         spinner.valueProperty().addListener((obs, oldVal, newVal) -> {
-            if (updatingTransformUI || newVal == null) {
+            if (controller.isUpdatingTransformUI() || newVal == null) {
                 return;
             }
 
@@ -534,6 +541,235 @@ public class GuiMethods {
             transform.setRotation(value);
         } else {
             transform.setScale(value);
+        }
+    }
+
+    // === Новые методы, перенесенные из GuiController ===
+
+    private void setupSpinner(Spinner<Double> spinner, double initialValue, String axis, double min, double max) {
+        if (spinner == null) {
+            return;
+        }
+
+        // Очищаем текущую фабрику значений
+        spinner.setValueFactory(null);
+
+        // Создаем новую фабрику значений с правильными параметрами
+        SpinnerValueFactory<Double> valueFactory =
+                new SpinnerValueFactory.DoubleSpinnerValueFactory(min, max, initialValue, 1.0);
+        spinner.setValueFactory(valueFactory);
+
+        // Настраиваем форматирование отображения (2 знака после запятой)
+        spinner.getValueFactory().setConverter(new javafx.util.converter.DoubleStringConverter() {
+            @Override
+            public String toString(Double value) {
+                return String.format("%.2f", value);
+            }
+
+            @Override
+            public Double fromString(String string) {
+                try {
+                    // Очищаем строку от лишних символов
+                    string = string.replace(',', '.');
+                    return Double.parseDouble(string);
+                } catch (NumberFormatException e) {
+                    // Возвращаем текущее значение при ошибке
+                    return spinner.getValue();
+                }
+            }
+        });
+
+        // Разрешаем редактирование вручную
+        spinner.setEditable(true);
+
+        // Обработка ручного ввода
+        spinner.getEditor().setOnAction(event -> {
+            try {
+                String text = spinner.getEditor().getText();
+                text = text.replace(',', '.');
+                double value = Double.parseDouble(text);
+
+                // Проверяем границы
+                if (value < min) value = min;
+                if (value > max) value = max;
+
+                spinner.getValueFactory().setValue(value);
+            } catch (NumberFormatException e) {
+                // Восстанавливаем предыдущее значение при ошибке
+                spinner.getEditor().setText(
+                        String.format("%.2f", spinner.getValue())
+                );
+            }
+        });
+
+        // Также обновляем текст при изменении значения через стрелки
+        spinner.valueProperty().addListener((obs, oldVal, newVal) -> {
+            spinner.getEditor().setText(String.format("%.2f", newVal));
+        });
+    }
+
+    private void bindTransformSpinners() {
+        bindTransformSpinner(controller.getTranslationXSpinner(), TransformKind.TRANSLATION, Axis.X);
+        bindTransformSpinner(controller.getTranslationYSpinner(), TransformKind.TRANSLATION, Axis.Y);
+        bindTransformSpinner(controller.getTranslationZSpinner(), TransformKind.TRANSLATION, Axis.Z);
+
+        bindTransformSpinner(controller.getRotationXSpinner(), TransformKind.ROTATION, Axis.X);
+        bindTransformSpinner(controller.getRotationYSpinner(), TransformKind.ROTATION, Axis.Y);
+        bindTransformSpinner(controller.getRotationZSpinner(), TransformKind.ROTATION, Axis.Z);
+
+        bindTransformSpinner(controller.getScaleXSpinner(), TransformKind.SCALE, Axis.X);
+        bindTransformSpinner(controller.getScaleYSpinner(), TransformKind.SCALE, Axis.Y);
+        bindTransformSpinner(controller.getScaleZSpinner(), TransformKind.SCALE, Axis.Z);
+    }
+
+    private void bindTransformSpinner(
+            final Spinner<Double> spinner,
+            final TransformKind kind,
+            final Axis axis
+    ) {
+        if (spinner == null) {
+            return;
+        }
+
+        spinner.valueProperty().addListener((obs, oldValue, newValue) -> {
+            if (controller.isUpdatingTransformUI()) {
+                return;
+            }
+            if (oldValue == null || newValue == null) {
+                return;
+            }
+            if (Math.abs(newValue - oldValue) < 1e-12) {
+                return;
+            }
+            if (selectedObjects.isEmpty()) {
+                return;
+            }
+
+            applyTransformDelta(kind, axis, oldValue, newValue);
+        });
+    }
+
+    private void applyTransformDelta(
+            final TransformKind kind,
+            final Axis axis,
+            final double oldValue,
+            final double newValue
+    ) {
+        // Применяем изменения к выбранным объектам
+        switch (kind) {
+            case TRANSLATION: {
+                final float d = (float) (newValue - oldValue);
+                for (SceneObject obj : selectedObjects) {
+                    Transform t = ensureTransform(obj);
+                    if (t == null) {
+                        continue;
+                    }
+
+                    switch (axis) {
+                        case X:
+                            t.translate(d, 0, 0);
+                            break;
+                        case Y:
+                            t.translate(0, d, 0);
+                            break;
+                        case Z:
+                            t.translate(0, 0, d);
+                            break;
+                    }
+                }
+                break;
+            }
+            case ROTATION: {
+                // В UI градусы, в Transform радианы.
+                final float dRad = (float) Math.toRadians(newValue - oldValue);
+                for (SceneObject obj : selectedObjects) {
+                    Transform t = ensureTransform(obj);
+                    if (t == null) {
+                        continue;
+                    }
+
+                    switch (axis) {
+                        case X:
+                            t.rotate(dRad, 0, 0);
+                            break;
+                        case Y:
+                            t.rotate(0, dRad, 0);
+                            break;
+                        case Z:
+                            t.rotate(0, 0, dRad);
+                            break;
+                    }
+                }
+                break;
+            }
+            case SCALE: {
+                // Масштабирование уже работает, оставляем как есть
+                final double EPS = 1e-9;
+                final boolean oldIsZero = Math.abs(oldValue) < EPS;
+
+                if (oldIsZero) {
+                    final float absolute = (float) newValue;
+                    for (SceneObject obj : selectedObjects) {
+                        Transform t = ensureTransform(obj);
+                        if (t == null) {
+                            continue;
+                        }
+                        setScaleComponent(t, axis, absolute);
+                    }
+                } else {
+                    final float factor = (float) (newValue / oldValue);
+                    for (SceneObject obj : selectedObjects) {
+                        Transform t = ensureTransform(obj);
+                        if (t == null) {
+                            continue;
+                        }
+                        multiplyScaleComponent(t, axis, factor);
+                    }
+                }
+                break;
+            }
+        }
+        // Разрешаем обновление UI на время
+        controller.setUpdatingTransformUI(true);
+        try {
+            updateTransformSpinnersFromSelection();
+        } finally {
+            controller.setUpdatingTransformUI(false);
+        }
+    }
+
+    private void setScaleComponent(final Transform t, final Axis axis, final float value) {
+        if (t == null) return;
+
+        Vector3 s = (t.getScale() != null) ? t.getScale() : new Vector3(1, 1, 1);
+        switch (axis) {
+            case X:
+                s.x = value;
+                break;
+            case Y:
+                s.y = value;
+                break;
+            case Z:
+                s.z = value;
+                break;
+        }
+        t.setScale(s);
+    }
+
+    private void multiplyScaleComponent(final Transform t, final Axis axis, final float factor) {
+        if (t == null) return;
+
+        // В Transform есть scaleX/scaleY/scaleZ, которые как раз умножают компоненту.
+        switch (axis) {
+            case X:
+                t.scaleX(factor);
+                break;
+            case Y:
+                t.scaleY(factor);
+                break;
+            case Z:
+                t.scaleZ(factor);
+                break;
         }
     }
 }

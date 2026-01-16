@@ -1,8 +1,10 @@
 package com.cgvsu.gui;
 
+import com.cgvsu.math.Matrix4;
 import com.cgvsu.math.Vector3;
 import com.cgvsu.model.Model;
-import com.cgvsu.model.ModelPreparationUtils;
+import com.cgvsu.model.Polygon;
+import com.cgvsu.model.PolygonSelection;
 import com.cgvsu.render_engine.*;
 import com.cgvsu.render_engine.camera_gizmo.CameraManager;
 import com.cgvsu.render_engine.scene.Scene;
@@ -58,6 +60,11 @@ public class GuiController {
     @FXML private Menu viewMenu;
     @FXML private MenuItem addCameraMenuItem;
     @FXML private ListView<SceneObject> modelsListView;
+    @FXML private CheckBox polygonCheckBox;
+
+    // Новые поля для выделения полигонов
+    private List<PolygonSelection> selectedPolygons = new ArrayList<>();
+    private boolean polygonSelectionMode = false;
 
     // Менеджеры
     private CameraManager cameraManager;
@@ -77,6 +84,18 @@ public class GuiController {
     private double lastMouseX;
     private double lastMouseY;
 
+    // Новые поля из второго файла
+    private int mouseX = 0;
+    private int mouseY = 0;
+    /**
+     * Флаг, чтобы программное обновление спиннеров (например, при выборе объекта)
+     * не вызывало применение трансформаций через слушатели.
+     */
+    private boolean updatingTransformUI = false;
+
+    private enum Axis { X, Y, Z }
+    private enum TransformKind { TRANSLATION, ROTATION, SCALE }
+
     @FXML
     private void initialize() {
         // Инициализируем менеджеры
@@ -87,6 +106,23 @@ public class GuiController {
         cameraManager = new CameraManager(scene);
         cameraManager.initializeWithUI(viewMenu, addCameraMenuItem);
 
+        // Настройка адаптивных размеров из второго файла
+        anchorPane.widthProperty().addListener((obs, oldVal, newVal) -> {
+            canvas.setWidth(newVal.doubleValue() - 250);
+        });
+
+        anchorPane.heightProperty().addListener((obs, oldVal, newVal) -> {
+            canvas.setHeight(newVal.doubleValue() - 30);
+        });
+
+        if (modelInfoLabel != null) {
+            modelInfoLabel.setText("Модель не загружена");
+        }
+
+        if (textureInfoLabel != null) {
+            textureInfoLabel.setText("Текстура не загружена");
+        }
+
         // Настройка UI
         guiMethods.initializeUI(anchorPane, canvas, modelsListView, modelInfoLabel, textureInfoLabel);
 
@@ -94,24 +130,60 @@ public class GuiController {
         setupMouseListeners();
 
         // Настройка спиннеров
-        setupSpinners();
+        guiMethods.setupSpinners(
+                Arrays.asList(translationXSpinner, translationYSpinner, translationZSpinner),
+                Arrays.asList(rotationXSpinner, rotationYSpinner, rotationZSpinner),
+                Arrays.asList(scaleXSpinner, scaleYSpinner, scaleZSpinner),
+                selectedObjects
+        );
 
         // Настройка чекбоксов
         setupCheckBoxes();
 
         // Запуск анимации
         startAnimation();
+
+        // Обновление информации о моделях
+        guiMethods.updateModelInfoLabel();
+
+        setupPolygonCheckBox();
+    }
+
+    private void setupPolygonCheckBox() {
+        polygonCheckBox.selectedProperty().addListener((o, a, b) -> {
+            polygonSelectionMode = b;
+            if (!b) {
+                // При отключении режима очищаем выделенные полигоны
+                selectedPolygons.clear();
+            }
+        });
     }
 
     private void setupMouseListeners() {
         canvas.setOnMouseClicked(event -> {
             if (event.getButton() == MouseButton.PRIMARY) {
-                guiMethods.handleObjectSelection((int) event.getX(), (int) event.getY());
+                if (polygonSelectionMode && !selectedObjects.isEmpty()) {
+                    // Режим выделения полигонов - только если есть выделенный объект
+                    handlePolygonSelection((int) event.getX(), (int) event.getY());
+                    // Обновляем отображение
+                    renderFrame();
+                } else {
+                    // Обычный режим выделения объектов (только если не в режиме полигонов)
+                    guiMethods.handleObjectSelection((int) event.getX(), (int) event.getY());
+                    guiMethods.updateModelInfoLabel();
+                    // Сбрасываем выделение полигонов при выборе нового объекта
+                    selectedPolygons.clear();
+                }
             }
         });
 
+        // УДАЛИТЕ дублирующийся обработчик mouseClicked
+        // canvas.setOnMouseClicked(event -> { ... }); <-- этот нужно удалить
+
         canvas.setOnMouseMoved(event -> {
-            guiMethods.handleMouseMove((int) event.getX(), (int) event.getY());
+            mouseX = (int) event.getX();
+            mouseY = (int) event.getY();
+            guiMethods.handleMouseMove(mouseX, mouseY);
         });
 
         canvas.setOnMouseExited(event -> {
@@ -132,9 +204,11 @@ public class GuiController {
         });
 
         canvas.setOnMouseDragged(event -> {
-            guiMethods.handleMouseDrag(event, lastMouseX, lastMouseY, selectedObjects);
-            lastMouseX = event.getX();
-            lastMouseY = event.getY();
+            if (!selectedObjects.isEmpty()) {
+                guiMethods.handleMouseDrag(event, lastMouseX, lastMouseY, selectedObjects);
+                lastMouseX = event.getX();
+                lastMouseY = event.getY();
+            }
         });
 
         canvas.setOnScroll(event -> {
@@ -142,21 +216,100 @@ public class GuiController {
         });
     }
 
-    private void setupSpinners() {
-        List<Spinner<Double>> translationSpinners = Arrays.asList(
-                translationXSpinner, translationYSpinner, translationZSpinner
-        );
-        List<Spinner<Double>> rotationSpinners = Arrays.asList(
-                rotationXSpinner, rotationYSpinner, rotationZSpinner
-        );
-        List<Spinner<Double>> scaleSpinners = Arrays.asList(
-                scaleXSpinner, scaleYSpinner, scaleZSpinner
-        );
+    private void handlePolygonSelection(int mouseX, int mouseY) {
+        if (selectedObjects.isEmpty()) {
+            // Нет выделенных объектов - нельзя выделить полигоны
+            return;
+        }
 
-        guiMethods.setupTransformSpinners(
-                translationSpinners, rotationSpinners, scaleSpinners,
-                selectedObjects
-        );
+        SceneObject selectedObject = selectedObjects.get(0); // Берем первый выделенный объект
+        Model mesh = selectedObject.getModel();
+
+        if (mesh == null) return;
+
+        // Ищем полигон под курсором
+        Polygon selectedPolygon = findPolygonUnderCursor(selectedObject, mouseX, mouseY);
+
+        if (selectedPolygon != null) {
+            PolygonSelection selection = new PolygonSelection(selectedObject, selectedPolygon);
+
+            // Проверяем, выделен ли уже этот полигон
+            boolean alreadySelected = selectedPolygons.stream()
+                    .anyMatch(ps -> ps.equals(selection));
+
+            if (alreadySelected) {
+                // Удаляем из выделенных
+                selectedPolygons.removeIf(ps -> ps.equals(selection));
+            } else {
+                // Добавляем в выделенные
+                selectedPolygons.add(selection);
+            }
+        }
+    }
+
+    private Polygon findPolygonUnderCursor(SceneObject object, int mouseX, int mouseY) {
+        Model mesh = object.getModel();
+        if (mesh == null || mesh.polygons.isEmpty()) return null;
+
+        Camera camera = scene.getActiveCamera();
+        Matrix4 modelMatrix = RenderEngine.getModelMatrix(object);
+        Matrix4 viewMatrix = camera.getViewMatrix();
+        Matrix4 projectionMatrix = camera.getProjectionMatrix();
+        Matrix4 modelViewProjectionMatrix = projectionMatrix.multiply(viewMatrix).multiply(modelMatrix);
+
+        // Для каждого полигона проверяем, попал ли курсор в его границы
+        for (Polygon polygon : mesh.polygons) {
+            if (polygon.getVertexIndices().size() < 3) continue;
+
+            // Получаем вершины полигона
+            List<Integer> vertexIndices = polygon.getVertexIndices();
+            List<Vector3> screenVertices = new ArrayList<>();
+
+            for (int vertexIndex : vertexIndices) {
+                Vector3 vertex = mesh.vertices.get(vertexIndex);
+                Vector3 screenPos = RenderEngine.transformVertex(vertex, modelViewProjectionMatrix,
+                        (int) canvas.getWidth(), (int) canvas.getHeight());
+                screenVertices.add(screenPos);
+            }
+
+            // Проверяем, находится ли точка внутри полигона
+            if (isPointInPolygon(mouseX, mouseY, screenVertices)) {
+                return polygon;
+            }
+        }
+
+        return null;
+    }
+
+    private boolean isPointInPolygon(int x, int y, List<Vector3> vertices) {
+        // Алгоритм winding number для проверки нахождения точки в полигоне
+        int windingNumber = 0;
+        int n = vertices.size();
+
+        for (int i = 0; i < n; i++) {
+            Vector3 v1 = vertices.get(i);
+            Vector3 v2 = vertices.get((i + 1) % n);
+
+            if (v1.y <= y) {
+                if (v2.y > y) {
+                    if (isLeft(v1, v2, x, y) > 0) {
+                        windingNumber++;
+                    }
+                }
+            } else {
+                if (v2.y <= y) {
+                    if (isLeft(v1, v2, x, y) < 0) {
+                        windingNumber--;
+                    }
+                }
+            }
+        }
+
+        return windingNumber != 0;
+    }
+
+    private double isLeft(Vector3 v1, Vector3 v2, int x, int y) {
+        return (v2.x - v1.x) * (y - v1.y) - (x - v1.x) * (v2.y - v1.y);
     }
 
     private void setupCheckBoxes() {
@@ -206,9 +359,15 @@ public class GuiController {
                     currentTexture,
                     renderSettings,
                     (int) width,
-                    (int) height
+                    (int) height,
+                    selectedPolygons  // Передаем выделенные полигоны
             );
         }
+    }
+
+    // В GuiController.java
+    public void clearSelectedPolygons() {
+        selectedPolygons.clear();
     }
 
     // === Методы для кнопок (делегируются GuiButtons) ===
@@ -216,6 +375,7 @@ public class GuiController {
     @FXML
     private void onOpenModelMenuItemClick() {
         guiButtons.onOpenModelMenuItemClick(canvas, modelInfoLabel, modelsListView);
+        guiMethods.updateModelInfoLabel();
     }
 
     @FXML
@@ -229,16 +389,19 @@ public class GuiController {
     @FXML
     private void onResetTranslationButtonClick() {
         guiButtons.onResetTranslationButtonClick(selectedObjects);
+        guiMethods.updateTransformSpinnersFromSelection();
     }
 
     @FXML
     private void onResetRotationButtonClick() {
         guiButtons.onResetRotationButtonClick(selectedObjects);
+        guiMethods.updateTransformSpinnersFromSelection();
     }
 
     @FXML
     private void onResetScaleButtonClick() {
         guiButtons.onResetScaleButtonClick(selectedObjects);
+        guiMethods.updateTransformSpinnersFromSelection();
     }
 
     @FXML
@@ -247,6 +410,7 @@ public class GuiController {
         if (hoveredObject != null && selectedObjects.contains(hoveredObject)) {
             hoveredObject = null;
         }
+        guiMethods.updateModelInfoLabel();
     }
 
     @FXML
@@ -383,12 +547,27 @@ public class GuiController {
         return modelsListView;
     }
 
-
     public Texture getCurrentTexture() {
         return currentTexture;
     }
 
     public void setCurrentTexture(Texture texture) {
         this.currentTexture = texture;
+    }
+
+    public boolean isUpdatingTransformUI() {
+        return updatingTransformUI;
+    }
+
+    public void setUpdatingTransformUI(boolean updatingTransformUI) {
+        this.updatingTransformUI = updatingTransformUI;
+    }
+
+    public List<PolygonSelection> getSelectedPolygons() {
+        return selectedPolygons;
+    }
+
+    public boolean isPolygonSelectionMode() {
+        return polygonSelectionMode;
     }
 }
