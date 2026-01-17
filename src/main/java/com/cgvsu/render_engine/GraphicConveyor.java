@@ -4,55 +4,33 @@ import com.cgvsu.math.*;
 
 public class GraphicConveyor {
 
-    /**
-     * Видовая матрица (lookAt) для векторов-столбцов:
-     * v_camera = V * v_world.
-     */
     public static Matrix4 lookAt(final Vector3 eye, final Vector3 target) {
         return lookAt(eye, target, new Vector3(0F, 1.0F, 0F));
     }
 
-    /**
-     * Видовая матрица (lookAt) для векторов-столбцов:
-     * v_camera = V * v_world.
-     * Формула соответствует теории:
-     * z = target - eye;
-     * x = up × z;
-     * y = z × x;
-     * V = [ x^T  -x·eye
-     *       y^T  -y·eye
-     *       z^T  -z·eye
-     *       0 0 0 1 ]
-     */
+
     public static Matrix4 lookAt(final Vector3 eye, final Vector3 target, final Vector3 up) {
-        // z = target - eye
         Vector3 z = target.subtract(eye);
         z = z.normalized();
 
-        // x = up × z
         Vector3 x = up.cross(z);
         x = x.normalized();
 
-        // y = z × x
         Vector3 y = z.cross(x);
         y = y.normalized();
 
-        // Создаем матрицу 4x4
         float[][] values = new float[4][4];
 
-        // Первая строка (x)
         values[0][0] = x.x;
         values[0][1] = x.y;
         values[0][2] = x.z;
         values[0][3] = -x.dot(eye);
 
-        // Вторая строка (y)
         values[1][0] = y.x;
         values[1][1] = y.y;
         values[1][2] = y.z;
         values[1][3] = -y.dot(eye);
 
-        // Третья строка (z)
         values[2][0] = z.x;
         values[2][1] = z.y;
         values[2][2] = z.z;
@@ -67,12 +45,7 @@ public class GraphicConveyor {
         return new Matrix4(values);
     }
 
-    /**
-     * Матрица перспективной проекции под векторы-столбцы.
-     *
-     * Важно: в этой реализации w' = z,
-     * т.е. после умножения обязательно деление на w.
-     */
+
     public static Matrix4 perspective(
             final float fov,
             final float aspectRatio,
@@ -106,22 +79,15 @@ public class GraphicConveyor {
 
     public static Vector4 multiplyMatrix4ByVector4(final Matrix4 matrix, final Vector3 vertex) {
         Vector4 v4 = new Vector4(vertex.x, vertex.y, vertex.z, 1.0f);
-        return matrix.multiply(v4); // ВАЖНО: без деления на w
+        return matrix.multiply(v4);
     }
 
     public static Vector3 multiplyMatrix4ByVector3(final Matrix4 matrix, final Vector3 vertex) {
-        // Создаем вектор 4D (w=1 для точек)
         Vector4 vertex4 = new Vector4(vertex.x, vertex.y, vertex.z, 1.0f);
-
-        // Умножаем матрицу на вектор
         Vector4 result4 = matrix.multiply(vertex4);
-
-        // Если w == 0, точка находится на плоскости камеры
         if (Math.abs(result4.w) < 1e-7f) {
             return new Vector3(Float.NaN, Float.NaN, Float.NaN);
         }
-
-        // Перспективное деление
         return new Vector3(
                 result4.x / result4.w,
                 result4.y / result4.w,
@@ -130,17 +96,13 @@ public class GraphicConveyor {
     }
 
     public static Point2 vertexToPoint(final Vector3 vertex, final int width, final int height) {
-        // Переход из NDC [-1..1] в экранные координаты:
-        // x_screen = (x_ndc + 1) * w/2
-        // y_screen = (1 - y_ndc) * h/2
         return new Point2(
                 (vertex.x * width * 0.5F) + width * 0.5F,
                 (-vertex.y * height * 0.5F) + height * 0.5F);
     }
 
-    // Матрица перемещения
     public static Matrix4 createTranslationMatrix(Vector3 translation) {
-        float[][] values = Matrix4.identity().m; // Копируем единичную матрицу
+        float[][] values = Matrix4.identity().m;
 
         values[0][3] = translation.x;
         values[1][3] = translation.y;
@@ -149,7 +111,6 @@ public class GraphicConveyor {
         return new Matrix4(values);
     }
 
-    // Матрица масштабирования
     public static Matrix4 createScaleMatrix(Vector3 scale) {
         float[][] values = new float[4][4];
 
@@ -211,20 +172,11 @@ public class GraphicConveyor {
 
     public static Matrix4 createModelMatrix(Vector3 translation, Vector3 rotation, Vector3 scale) {
         final Matrix4 scaleMatrix = createScaleMatrix(scale);
-
-        // Поворот (X → Y → Z) для векторов-столбцов:
-        // v' = (Rz * Ry * Rx) * v, т.е. фактически применяется Rx, затем Ry, затем Rz.
         final Matrix4 rotX = createRotationXMatrix(rotation.x);
         final Matrix4 rotY = createRotationYMatrix(rotation.y);
         final Matrix4 rotZ = createRotationZMatrix(rotation.z);
-
-        // R = Rz * Ry * Rx
         Matrix4 rotationMatrix = rotZ.multiply(rotY).multiply(rotX);
-
-        // Перемещение
         final Matrix4 translationMatrix = createTranslationMatrix(translation);
-
-        // M = T * R * S
         return translationMatrix.multiply(rotationMatrix).multiply(scaleMatrix);
     }
 }

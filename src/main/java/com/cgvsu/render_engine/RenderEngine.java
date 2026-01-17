@@ -159,12 +159,7 @@ public class RenderEngine {
         gc.stroke();
     }
 
-    /**
-     * Строит модельную матрицу для объекта сцены.
-     *
-     * Важно: GraphicConveyor работает с векторами-столбцами, поэтому используем
-     * M = T * R * S и далее в пайплайне P * V * M.
-     */
+
     public static Matrix4 getModelMatrix(final SceneObject sceneObject) {
         if (sceneObject == null || sceneObject.getTransform() == null) {
             return GraphicConveyor.createModelMatrix(
@@ -320,9 +315,6 @@ public class RenderEngine {
         }
     }
 
-    /**
-     * Рендерит только полигональную сетку
-     */
     private static void renderWireframe(
             final GraphicsContext graphicsContext,
             final Camera camera,
@@ -376,8 +368,7 @@ public class RenderEngine {
             Vector3 v1 = edge.v1;
             Vector3 v2 = edge.v2;
 
-            // Небольшое смещение по Z, чтобы линии были поверх треугольников
-            // Отрицательное значение, так как в Z-буфере меньшие значения ближе
+
             float zOffset = -0.0001f;
             Vector3 v1Offset = new Vector3(v1.x, v1.y, v1.z + zOffset);
             Vector3 v2Offset = new Vector3(v2.x, v2.y, v2.z + zOffset);
@@ -387,12 +378,7 @@ public class RenderEngine {
         }
     }
 
-    // ============= ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ =============
 
-    /**
-     * Преобразует вершину из мировых в экранные координаты
-     */
-    // RenderEngine.java
     public static ProjectedVertex projectVertex(
             Vector3 vertex,
             Vector2 texCoord,        // может быть null
@@ -432,13 +418,7 @@ public class RenderEngine {
         return new ProjectedVertex(screenX, screenY, invW, zOverW, uOverW, vOverW, nxOverW, nyOverW, nzOverW);
     }
 
-    /**
-     * Упрощённая проекция вершины в экранные координаты (для wireframe/линий).
-     * Возвращает (x_screen, y_screen, z_ndc).
-     *
-     * ВАЖНО: это не перспективно-корректная интерполяция атрибутов; используется
-     * только для линий/отсечения/сборки рёбер.
-     */
+
     public static Vector3 transformVertex(final Vector3 vertex, final Matrix4 mvp, final int width, final int height) {
         Vector3 ndc = GraphicConveyor.multiplyMatrix4ByVector3(mvp, vertex);
         if (!Float.isFinite(ndc.x) || !Float.isFinite(ndc.y) || !Float.isFinite(ndc.z)) {
@@ -449,9 +429,7 @@ public class RenderEngine {
     }
 
 
-    /**
-     * Вычисляет матрицу для преобразования нормалей
-     */
+
     private static Matrix3 calculateNormalMatrix(Matrix4 modelViewMatrix) {
         // Берем верхнюю левую 3x3 подматрицу матрицы модель-вид
         float[][] m = new float[3][3];
