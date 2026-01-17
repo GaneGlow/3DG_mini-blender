@@ -10,7 +10,7 @@ import static com.cgvsu.render_engine.GraphicConveyor.*;
 class GraphicConveyorTest {
 
     private static final float EPSILON = 0.0001f;
-/*
+
     @Test
     void testLookAtIdentity() {
         // Камера смотрит вдоль оси Z в положительном направлении
@@ -405,5 +405,5 @@ class GraphicConveyorTest {
         Assertions.assertEquals(0.0f, r.x, EPSILON);
         Assertions.assertEquals(-1.0f, r.y, EPSILON);
         Assertions.assertEquals(0.0f, r.z, EPSILON);
-    }*/
+    }
 }
