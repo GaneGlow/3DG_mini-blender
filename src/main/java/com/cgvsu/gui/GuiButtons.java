@@ -44,7 +44,7 @@ public class GuiButtons {
         this.selectedObjects = selectedObjects;
     }
 
-    public void onOpenModelMenuItemClick(Canvas canvas, Label modelInfoLabel, ListView<SceneObject> modelsListView) {
+    public void onOpenModelMenuItemClick(Canvas canvas) {
         FileChooser fileChooser = new FileChooser();
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Model (*.obj)", "*.obj"));
         fileChooser.setTitle("Load Model");
@@ -136,7 +136,6 @@ public class GuiButtons {
                 obj.setTransform(currentTransform);
             }
 
-            // Сбрасываем значение компонента к начальному значению
             if (component == TransformComponent.TRANSLATION) {
                 currentTransform.setTranslation(new Vector3(0, 0, 0));
             } else if (component == TransformComponent.ROTATION) {
@@ -147,26 +146,6 @@ public class GuiButtons {
         }
 
         guiMethods.updateTransformSpinnersFromSelection();
-    }
-
-    private Vector3 getInitialVector(Transform transform, TransformComponent component) {
-        if (component == TransformComponent.TRANSLATION) {
-            return transform.getTranslation();
-        } else if (component == TransformComponent.ROTATION) {
-            return transform.getRotation();
-        } else {
-            return transform.getScale();
-        }
-    }
-
-    private void setTransformComponent(Transform transform, TransformComponent component, Vector3 value) {
-        if (component == TransformComponent.TRANSLATION) {
-            transform.setTranslation(value);
-        } else if (component == TransformComponent.ROTATION) {
-            transform.setRotation(value);
-        } else {
-            transform.setScale(value);
-        }
     }
 
     public void onDeleteSelectedButtonClick(ActionEvent event, List<SceneObject> selectedObjects,
@@ -208,26 +187,6 @@ public class GuiButtons {
         } else {
             showAlert("Максимальное количество камер",
                     "Достигнуто максимальное количество камер (8).");
-        }
-    }
-
-    public void handleKeyPressed(KeyEvent event, CameraManager cameraManager,
-                                 List<SceneObject> selectedObjects) {
-        boolean handled = cameraManager.handleKeyPressed(
-                event.getCode(),
-                event.isAltDown()
-        );
-
-        if (handled) return;
-
-        switch (event.getCode()) {
-            case DELETE:
-            case BACK_SPACE:
-                if (!selectedObjects.isEmpty()) {
-                    onDeleteSelectedButtonClick(new ActionEvent(), selectedObjects,
-                            controller.getModelsListView(), controller.getHoveredObject());
-                }
-                break;
         }
     }
 

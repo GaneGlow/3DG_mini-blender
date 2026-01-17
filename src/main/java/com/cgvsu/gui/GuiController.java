@@ -35,11 +35,9 @@ import java.util.*;
 
 public class GuiController {
 
-    // Константы
     final private float TRANSLATION = 0.5F;
     private Color backgroundColor = Color.web("#313131");
 
-    // FXML элементы
     @FXML private AnchorPane anchorPane;
     @FXML private Canvas canvas;
     @FXML private CheckBox wireframeCheckBox;
@@ -63,51 +61,36 @@ public class GuiController {
     @FXML private ListView<SceneObject> modelsListView;
     @FXML private CheckBox polygonCheckBox;
 
-    // Новые поля для выделения полигонов
     private List<PolygonSelection> selectedPolygons = new ArrayList<>();
     private boolean polygonSelectionMode = false;
 
-    // Менеджеры
     private CameraManager cameraManager;
     private GuiMethods guiMethods;
     private GuiButtons guiButtons;
     private Timeline timeline;
 
-    // Состояние
     private final Scene scene = new Scene();
     private final RenderSettings renderSettings = new RenderSettings();
     private final List<SceneObject> selectedObjects = new ArrayList<>();
     private SceneObject hoveredObject = null;
-    private Model mesh = null;
     private Texture currentTexture = null;
     private boolean isLeftMousePressed = false;
     private boolean isRightMousePressed = false;
     private double lastMouseX;
     private double lastMouseY;
 
-    // Новые поля из второго файла
     private int mouseX = 0;
     private int mouseY = 0;
-    /**
-     * Флаг, чтобы программное обновление спиннеров (например, при выборе объекта)
-     * не вызывало применение трансформаций через слушатели.
-     */
     private boolean updatingTransformUI = false;
-
-    private enum Axis { X, Y, Z }
-    private enum TransformKind { TRANSLATION, ROTATION, SCALE }
 
     @FXML
     private void initialize() {
-        // Инициализируем менеджеры
         guiMethods = new GuiMethods(this, scene, renderSettings, selectedObjects);
         guiButtons = new GuiButtons(this, guiMethods, scene, renderSettings, selectedObjects);
 
-        // Инициализируем менеджер камер
         cameraManager = new CameraManager(scene);
         cameraManager.initializeWithUI(viewMenu, addCameraMenuItem);
 
-        // Настройка адаптивных размеров из второго файла
         anchorPane.widthProperty().addListener((obs, oldVal, newVal) -> {
             canvas.setWidth(newVal.doubleValue() - 250);
         });
@@ -124,13 +107,10 @@ public class GuiController {
             textureInfoLabel.setText("Текстура не загружена");
         }
 
-        // Настройка UI
         guiMethods.initializeUI(anchorPane, canvas, modelsListView, modelInfoLabel, textureInfoLabel);
 
-        // Настройка слушателей мыши
         setupMouseListeners();
 
-        // Настройка спиннеров
         guiMethods.setupSpinners(
                 Arrays.asList(translationXSpinner, translationYSpinner, translationZSpinner),
                 Arrays.asList(rotationXSpinner, rotationYSpinner, rotationZSpinner),
@@ -138,13 +118,10 @@ public class GuiController {
                 selectedObjects
         );
 
-        // Настройка чекбоксов
         setupCheckBoxes();
 
-        // Запуск анимации
         startAnimation();
 
-        // Обновление информации о моделях
         guiMethods.updateModelInfoLabel();
 
         setupPolygonCheckBox();
@@ -154,7 +131,6 @@ public class GuiController {
         polygonCheckBox.selectedProperty().addListener((o, a, b) -> {
             polygonSelectionMode = b;
             if (!b) {
-                // При отключении режима очищаем выделенные полигоны
                 selectedPolygons.clear();
             }
         });
@@ -164,15 +140,11 @@ public class GuiController {
         canvas.setOnMouseClicked(event -> {
             if (event.getButton() == MouseButton.PRIMARY) {
                 if (polygonSelectionMode && !selectedObjects.isEmpty()) {
-                    // Режим выделения полигонов - только если есть выделенный объект
                     handlePolygonSelection((int) event.getX(), (int) event.getY());
-                    // Обновляем отображение
                     renderFrame();
                 } else {
-                    // Обычный режим выделения объектов (только если не в режиме полигонов)
                     guiMethods.handleObjectSelection((int) event.getX(), (int) event.getY());
                     guiMethods.updateModelInfoLabel();
-                    // Сбрасываем выделение полигонов при выборе нового объекта
                     selectedPolygons.clear();
                 }
             }
@@ -216,30 +188,25 @@ public class GuiController {
 
     private void handlePolygonSelection(int mouseX, int mouseY) {
         if (selectedObjects.isEmpty()) {
-            // Нет выделенных объектов - нельзя выделить полигоны
             return;
         }
 
-        SceneObject selectedObject = selectedObjects.get(0); // Берем первый выделенный объект
+        SceneObject selectedObject = selectedObjects.get(0);
         Model mesh = selectedObject.getModel();
 
         if (mesh == null) return;
 
-        // Ищем полигон под курсором
         Polygon selectedPolygon = findPolygonUnderCursor(selectedObject, mouseX, mouseY);
 
         if (selectedPolygon != null) {
             PolygonSelection selection = new PolygonSelection(selectedObject, selectedPolygon);
 
-            // Проверяем, выделен ли уже этот полигон
             boolean alreadySelected = selectedPolygons.stream()
                     .anyMatch(ps -> ps.equals(selection));
 
             if (alreadySelected) {
-                // Удаляем из выделенных
                 selectedPolygons.removeIf(ps -> ps.equals(selection));
             } else {
-                // Добавляем в выделенные
                 selectedPolygons.add(selection);
             }
         }
@@ -255,11 +222,9 @@ public class GuiController {
         Matrix4 projectionMatrix = camera.getProjectionMatrix();
         Matrix4 modelViewProjectionMatrix = projectionMatrix.multiply(viewMatrix).multiply(modelMatrix);
 
-        // Для каждого полигона проверяем, попал ли курсор в его границы
         for (Polygon polygon : mesh.polygons) {
             if (polygon.getVertexIndices().size() < 3) continue;
 
-            // Получаем вершины полигона
             List<Integer> vertexIndices = polygon.getVertexIndices();
             List<Vector3> screenVertices = new ArrayList<>();
 
@@ -270,7 +235,6 @@ public class GuiController {
                 screenVertices.add(screenPos);
             }
 
-            // Проверяем, находится ли точка внутри полигона
             if (isPointInPolygon(mouseX, mouseY, screenVertices)) {
                 return polygon;
             }
@@ -280,7 +244,6 @@ public class GuiController {
     }
 
     private boolean isPointInPolygon(int x, int y, List<Vector3> vertices) {
-        // Алгоритм winding number для проверки нахождения точки в полигоне
         int windingNumber = 0;
         int n = vertices.size();
 
@@ -358,21 +321,18 @@ public class GuiController {
                     renderSettings,
                     (int) width,
                     (int) height,
-                    selectedPolygons  // Передаем выделенные полигоны
+                    selectedPolygons
             );
         }
     }
 
-    // В GuiController.java
     public void clearSelectedPolygons() {
         selectedPolygons.clear();
     }
 
-    // === Методы для кнопок (делегируются GuiButtons) ===
-
     @FXML
     private void onOpenModelMenuItemClick() {
-        guiButtons.onOpenModelMenuItemClick(canvas, modelInfoLabel, modelsListView);
+        guiButtons.onOpenModelMenuItemClick(canvas);
         guiMethods.updateModelInfoLabel();
     }
 
@@ -419,16 +379,10 @@ public class GuiController {
             );
         } catch (IOException e) {
             guiButtons.showAlert("Ошибка сохранения", "Не удалось сохранить файл: " + e.getMessage());
-        } catch (RuntimeException e) {
-            // На случай проблем в ObjWriter (валидации/данные модели)
-            guiButtons.showAlert("Ошибка сохранения", e.getMessage() != null ? e.getMessage() : "Неизвестная ошибка.");
+        } catch (RuntimeException e) {guiButtons.showAlert("Ошибка сохранения", e.getMessage() != null ? e.getMessage() : "Неизвестная ошибка.");
         }
     }
 
-    /**
-     * Выбор объекта для операций ввода/вывода.
-     * Приоритет: список выделенных объектов (клик по сцене) → выделение в ListView.
-     */
     private SceneObject getSelectedObjectForIO() {
         if (!selectedObjects.isEmpty()) {
             return selectedObjects.get(0);
@@ -460,16 +414,12 @@ public class GuiController {
     @FXML
     private void onDeleteSelectedButtonClick(ActionEvent event) {
         if (selectedObjects.isEmpty()) {
-            // Нет выделенных объектов - ничего не делаем
             return;
         }
 
-        // Сценарий 1: Удаление выделенных моделей (если нет выделенных полигонов)
         if (selectedPolygons.isEmpty()) {
-            // Вызываем существующий метод удаления моделей
             guiButtons.onDeleteSelectedButtonClick(event, selectedObjects, modelsListView, hoveredObject);
 
-            // Очищаем состояние после удаления
             if (hoveredObject != null && selectedObjects.contains(hoveredObject)) {
                 hoveredObject = null;
             }
@@ -477,7 +427,6 @@ public class GuiController {
             return;
         }
 
-        // Сценарий 2: Удаление выделенных полигонов
         Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
         confirmation.setTitle("Удаление полигонов");
         confirmation.setHeaderText("Удалить выделенные полигоны?");
@@ -491,7 +440,6 @@ public class GuiController {
         Optional<ButtonType> result = confirmation.showAndWait();
 
         if (result.isPresent() && result.get() == deleteButton) {
-            // Группируем полигоны по объектам
             Map<SceneObject, List<Integer>> polygonsToRemoveByObject = new HashMap<>();
 
             for (PolygonSelection selection : selectedPolygons) {
@@ -499,7 +447,6 @@ public class GuiController {
                 Model model = object.getModel();
 
                 if (model != null) {
-                    // Находим индекс полигона в модели
                     int polygonIndex = model.polygons.indexOf(selection.getPolygon()) + 1;
                     if (polygonIndex > 0) {
                         polygonsToRemoveByObject
@@ -509,7 +456,6 @@ public class GuiController {
                 }
             }
 
-            // Удаляем полигоны из каждого объекта
             for (Map.Entry<SceneObject, List<Integer>> entry : polygonsToRemoveByObject.entrySet()) {
                 SceneObject object = entry.getKey();
                 Model model = object.getModel();
@@ -521,14 +467,12 @@ public class GuiController {
                         model.textureVertices,
                         model.normals,
                         model.polygons,
-                        true  // удалить неиспользуемые вершины
+                        true
                 );
             }
 
-            // Очищаем список выделенных полигонов
             selectedPolygons.clear();
 
-            // Обновляем отображение
             renderFrame();
             guiButtons.showAlert("Удаление", "Полигоны успешно удалены!");
         }
@@ -537,13 +481,6 @@ public class GuiController {
     @FXML
     private void onExitMenuItemClick() {
         System.exit(0);
-    }
-
-    // === Методы для камеры ===
-
-    @FXML
-    private void onView1() {
-        cameraManager.switchToCamera(0);
     }
 
     @FXML
@@ -581,27 +518,12 @@ public class GuiController {
         scene.getActiveCamera().movePosition(new Vector3(0, -TRANSLATION, 0));
     }
 
-    @FXML
-    private void handleKeyPressed(KeyEvent event) {
-        guiButtons.handleKeyPressed(event, cameraManager, selectedObjects);
-    }
-
-    // === Геттеры для доступа из вспомогательных классов ===
-
     public Canvas getCanvas() {
         return canvas;
     }
 
     public Scene getScene() {
         return scene;
-    }
-
-    public RenderSettings getRenderSettings() {
-        return renderSettings;
-    }
-
-    public List<SceneObject> getSelectedObjects() {
-        return selectedObjects;
     }
 
     public SceneObject getHoveredObject() {
@@ -672,23 +594,11 @@ public class GuiController {
         return currentTexture;
     }
 
-    public void setCurrentTexture(Texture texture) {
-        this.currentTexture = texture;
-    }
-
     public boolean isUpdatingTransformUI() {
         return updatingTransformUI;
     }
 
     public void setUpdatingTransformUI(boolean updatingTransformUI) {
         this.updatingTransformUI = updatingTransformUI;
-    }
-
-    public List<PolygonSelection> getSelectedPolygons() {
-        return selectedPolygons;
-    }
-
-    public boolean isPolygonSelectionMode() {
-        return polygonSelectionMode;
     }
 }
