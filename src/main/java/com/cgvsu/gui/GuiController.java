@@ -317,12 +317,13 @@ public class GuiController {
             RenderEngine.render(
                     canvas.getGraphicsContext2D(),
                     scene,
-                    currentTexture,
+                    null, // Передаем null, так как текстура теперь берется из объекта
                     renderSettings,
                     (int) width,
                     (int) height,
                     selectedPolygons
             );
+
         }
     }
 
@@ -339,8 +340,29 @@ public class GuiController {
     @FXML
     private void onOpenTextureMenuItemClick() {
         Texture loadedTexture = guiButtons.onOpenTextureMenuItemClick(canvas, textureInfoLabel);
-        if (loadedTexture != null) {
-            currentTexture = loadedTexture;
+        if (loadedTexture != null && !selectedObjects.isEmpty()) {
+            for (SceneObject obj : selectedObjects) {
+                obj.setTexture(loadedTexture);
+            }
+            updateTextureInfoLabel();
+        } else if (loadedTexture != null && selectedObjects.isEmpty()) {
+            guiButtons.showAlert("Текстура", "Сначала выберите объект для применения текстуры.");
+        }
+    }
+
+    private void updateTextureInfoLabel() {
+        if (textureInfoLabel == null) return;
+
+        if (!selectedObjects.isEmpty()) {
+            SceneObject first = selectedObjects.get(0);
+            Texture tex = first.getTexture();
+            if (tex != null) {
+                //textureInfoLabel.setText("Текстура: " + tex.getFileName());
+            } else {
+                textureInfoLabel.setText("Текстура не загружена");
+            }
+        } else {
+            textureInfoLabel.setText("Выберите объект для просмотра текстуры");
         }
     }
 
