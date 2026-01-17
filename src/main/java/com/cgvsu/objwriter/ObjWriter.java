@@ -1,9 +1,14 @@
 package com.cgvsu.objwriter;
 
+import com.cgvsu.math.Matrix3;
+import com.cgvsu.math.Matrix4;
 import com.cgvsu.math.Vector2;
 import com.cgvsu.math.Vector3;
+import com.cgvsu.math.Vector4;
 import com.cgvsu.model.Model;
 import com.cgvsu.model.Polygon;
+import com.cgvsu.render_engine.GraphicConveyor;
+import com.cgvsu.render_engine.Transform;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -18,11 +23,29 @@ public class ObjWriter {
         Files.writeString(Path.of(filePath), content);
     }
 
+    /**
+     * Сохранение модели в OBJ с учетом аффинных преобразований.
+     *
+     * <p>Преобразование применяется только к геометрии (v) и нормалям (vn).
+     * Текстурные координаты (vt) не изменяются.</p>
+     */
+    public static void write(Model model, String filePath, Transform transform) throws IOException {
+        String content = modelToString(model, transform, "Modified model");
+        Files.writeString(Path.of(filePath), content);
+    }
+
     public static String modelToString(Model model) {
         return modelToString(model, "Modified model");
     }
 
     public static String modelToString(Model model, String comment) {
+        return modelToString(model, null, comment);
+    }
+
+    /**
+     * Формирование OBJ-строки с опциональным применением Transform.
+     */
+    public static String modelToString(Model model, Transform transform, String comment) {
         if (model == null) {
             throw new ObjWriterException("Model cannot be null");
         }
@@ -34,9 +57,12 @@ public class ObjWriter {
         }
 
         try {
+            final Matrix4 modelMatrix = buildModelMatrixOrIdentity(transform);
+            final Matrix3 normalMatrix = buildNormalMatrixOrNull(transform, modelMatrix);
+
             List<Vector3> vertices = model.getVertices();
             for (int i = 0; i < vertices.size(); i++) {
-                Vector3 vertex = vertices.get(i);
+                Vector3 vertex = transformVertex(vertices.get(i), modelMatrix);
                 validateVertex(vertex, i);
                 sb.append("v ")
                         .append(formatFloatCompact(vertex.getX()))
@@ -74,7 +100,7 @@ public class ObjWriter {
             List<Vector3> normals = model.getNormals();
             if (normals != null) {
                 for (int i = 0; i < normals.size(); i++) {
-                    Vector3 normal = normals.get(i);
+                    Vector3 normal = transformNormal(normals.get(i), normalMatrix);
                     validateNormal(normal, i);
                     sb.append("vn ")
                             .append(formatFloatCompact(normal.getX()))
@@ -135,6 +161,58 @@ public class ObjWriter {
         }
 
         return sb.toString();
+    }
+
+    // ====== Transform helpers (affine save) ======
+
+    private static Matrix4 buildModelMatrixOrIdentity(final Transform transform) {
+        // Если transform отсутствует, не применяем преобразование.
+        // Возвращаем null, т.к. transformVertex умеет работать с null.
+        if (transform == null) return null;
+
+        return GraphicConveyor.createModelMatrix(
+                transform.getTranslation(),
+                transform.getRotation(),
+                transform.getScale()
+        );
+    }
+
+    private static Matrix3 buildNormalMatrixOrNull(final Transform transform, final Matrix4 modelMatrix) {
+        if (transform == null) {
+            return null;
+        }
+
+        // Для нормалей используем inverse-transpose от верхней 3x3 матрицы модели.
+        float[][] m = new float[3][3];
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                m[i][j] = modelMatrix.get(i, j);
+            }
+        }
+        return new Matrix3(m).inverse().transpose();
+    }
+
+    private static Vector3 transformVertex(final Vector3 vertex, final Matrix4 modelMatrix) {
+        if (vertex == null) {
+            return null;
+        }
+        if (modelMatrix == null) {
+            return vertex;
+        }
+
+        Vector4 v4 = new Vector4(vertex.getX(), vertex.getY(), vertex.getZ(), 1.0f);
+        Vector4 r = modelMatrix.multiply(v4);
+        return new Vector3(r.x, r.y, r.z);
+    }
+
+    private static Vector3 transformNormal(final Vector3 normal, final Matrix3 normalMatrix) {
+        if (normal == null) {
+            return null;
+        }
+        if (normalMatrix == null) {
+            return normal;
+        }
+        return normalMatrix.multiply(normal).normalized();
     }
 
     //компактное форматирование чисел как в оригинальном файле
@@ -261,4 +339,5 @@ public class ObjWriter {
             }
         }
     }
+
 }
