@@ -17,20 +17,15 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.*;
-import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.FileChooser;
-import javafx.stage.Stage;
 import javafx.util.Duration;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.*;
 
 public class GuiController {
@@ -369,8 +364,10 @@ public class GuiController {
 
         try {
             if (withChanges) {
+                // Сохраняем с примененными преобразованиями
                 ObjWriter.write(selected.getModel(), file.getAbsolutePath(), selected.getTransform());
             } else {
+                // Сохраняем без изменений (оригинальные координаты)
                 ObjWriter.write(selected.getModel(), file.getAbsolutePath());
             }
             guiButtons.showAlert(
@@ -379,7 +376,8 @@ public class GuiController {
             );
         } catch (IOException e) {
             guiButtons.showAlert("Ошибка сохранения", "Не удалось сохранить файл: " + e.getMessage());
-        } catch (RuntimeException e) {guiButtons.showAlert("Ошибка сохранения", e.getMessage() != null ? e.getMessage() : "Неизвестная ошибка.");
+        } catch (RuntimeException e) {
+            guiButtons.showAlert("Ошибка сохранения", e.getMessage() != null ? e.getMessage() : "Неизвестная ошибка.");
         }
     }
 

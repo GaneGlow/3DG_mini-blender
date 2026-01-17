@@ -208,16 +208,14 @@
             </MenuItem>
             <MenuItem mnemonicParsing="false" onAction="#onSaveModelMenuItemClick" text="Сохранить без изменений"
                       styleClass="menu-item">
-                <!--вместо #onExitMenuItemClick надо написать название своего
-                      метода для сохранения модели без изменений-->
+                <!-- Метод onSaveModelMenuItemClick реализован в GuiController -->
                 <accelerator>
                     <KeyCodeCombination alt="UP" control="DOWN" meta="UP" shift="UP" shortcut="UP" code="S"/>
                 </accelerator>
             </MenuItem>
             <MenuItem mnemonicParsing="false" onAction="#onSaveModelWithChangesMenuItemClick" text="Сохранить с изменениями"
                       styleClass="menu-item">
-                <!--вместо #onExitMenuItemClick надо написать название своего
-                      метода для сохранения модели с изменениями-->
+                <!-- Метод onSaveModelWithChangesMenuItemClick реализован в GuiController -->
                 <accelerator>
                     <KeyCodeCombination alt="UP" control="DOWN" meta="UP" shift="DOWN" shortcut="UP" code="S"/>
                 </accelerator>

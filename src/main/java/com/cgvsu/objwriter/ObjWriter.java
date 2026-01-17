@@ -18,16 +18,16 @@ import java.util.Locale;
 
 public class ObjWriter {
 
+    /**
+     * Сохраняет модель без изменений (оригинальные координаты вершин)
+     */
     public static void write(Model model, String filePath) throws IOException {
         String content = modelToString(model);
         Files.writeString(Path.of(filePath), content);
     }
 
     /**
-     * Сохранение модели в OBJ с учетом аффинных преобразований.
-     *
-     * <p>Преобразование применяется только к геометрии (v) и нормалям (vn).
-     * Текстурные координаты (vt) не изменяются.</p>
+     * Сохраняет модель с применением афинных преобразований
      */
     public static void write(Model model, String filePath, Transform transform) throws IOException {
         String content = modelToString(model, transform, "Modified model");
@@ -166,8 +166,6 @@ public class ObjWriter {
     // ====== Transform helpers (affine save) ======
 
     private static Matrix4 buildModelMatrixOrIdentity(final Transform transform) {
-        // Если transform отсутствует, не применяем преобразование.
-        // Возвращаем null, т.к. transformVertex умеет работать с null.
         if (transform == null) return null;
 
         return GraphicConveyor.createModelMatrix(
@@ -182,7 +180,6 @@ public class ObjWriter {
             return null;
         }
 
-        // Для нормалей используем inverse-transpose от верхней 3x3 матрицы модели.
         float[][] m = new float[3][3];
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
