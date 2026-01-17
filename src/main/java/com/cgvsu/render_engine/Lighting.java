@@ -16,9 +16,6 @@ public class Lighting {
             this.intensity = intensity;
         }
 
-        public Light(Vector3 direction, Color color) {
-            this(direction, color, 1.0f);
-        }
     }
 
     public static float calculateLightingCoefficient(Vector3 normal, Vector3 lightDirection) {
@@ -37,10 +34,8 @@ public class Lighting {
     public static Color applySimpleLighting(Color baseColor, Vector3 normal, Light light) {
         float coefficient = calculateLightingCoefficient(normal, light.direction);
 
-        // Применяем интенсивность света
         coefficient *= light.intensity;
 
-        // Создаем новый цвет с учетом освещения
         return new Color(
                 Math.min(1.0, baseColor.getRed() * coefficient),
                 Math.min(1.0, baseColor.getGreen() * coefficient),
@@ -49,44 +44,25 @@ public class Lighting {
         );
     }
 
-    /**
-     * Улучшенная модель освещения с фоном (ambient lighting).
-     * Согласно методичке, в реальном мире всегда есть фоновое освещение.
-     *
-     * Формула из методички:
-     * rgb′ = rgb(1 - k) + rgb * k * l
-     * где k - коэффициент от 0 до 1, показывает долю света для настройки тени
-     */
     public static Color applyLightingWithAmbient(Color baseColor, Vector3 normal, Light light, float ambientCoefficient) {
-        // Ограничиваем коэффициент фона от 0 до 1
         ambientCoefficient = Math.max(0, Math.min(1, ambientCoefficient));
 
-        // Вычисляем коэффициент освещенности
         float lightingCoefficient = calculateLightingCoefficient(normal, light.direction);
-
-        // Формула из методички:
-        // rgb′ = rgb(1 - k) + rgb * k * l
-        // где (1 - k) - фоновая неизменная яркость, k*l - освещенная часть
-
         float k = light.intensity;
         float l = lightingCoefficient;
 
-        // Если l = 0 (точка не освещена), остается только фоновая составляющая
         if (l <= 0) {
             l = 0;
         }
 
-        // Вычисляем итоговые компоненты цвета
         double r = baseColor.getRed() * (1 - k + k * l);
         double g = baseColor.getGreen() * (1 - k + k * l);
         double b = baseColor.getBlue() * (1 - k + k * l);
 
-        // Добавляем фоновое освещение
         r = Math.min(1.0, r + baseColor.getRed() * ambientCoefficient);
         g = Math.min(1.0, g + baseColor.getGreen() * ambientCoefficient);
         b = Math.min(1.0, b + baseColor.getBlue() * ambientCoefficient);
 
-        // Ограничиваем значения
         r = Math.max(0, Math.min(1, r));
         g = Math.max(0, Math.min(1, g));
         b = Math.max(0, Math.min(1, b));
@@ -99,14 +75,11 @@ public class Lighting {
      * Использует интерполированные нормали для плавного освещения.
      */
     public static Color applySmoothLighting(Color baseColor, Vector3 normal, Light light) {
-        // Простая модель с небольшим фоновым освещением для плавности
         float ambient = 0.2f;
         float coefficient = calculateLightingCoefficient(normal, light.direction);
 
-        // Комбинируем фоновое и диффузное освещение
         float intensity = ambient + (1 - ambient) * coefficient * light.intensity;
 
-        // Ограничиваем интенсивность
         intensity = Math.max(0, Math.min(1, intensity));
 
         return new Color(
@@ -117,15 +90,9 @@ public class Lighting {
         );
     }
 
-    /**
-     * Создает источник света, привязанный к камере (как в методичке).
-     * Направление света - от камеры к объекту.
-     */
     public static Light createCameraLight(Vector3 cameraPosition, Vector3 targetPosition) {
-        // Направление от объекта к камере
         Vector3 direction = cameraPosition.subtract(targetPosition).normalized();
 
-        // Белый свет полной интенсивности
         return new Light(direction, Color.WHITE, 1.0f);
     }
 
